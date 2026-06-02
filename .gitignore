@@ -1,0 +1,7 @@
+brain/chroma/
+brain/bm25.pkl
+brain/ingestion_log.json
+brain/__pycache__/
+brain/tests/__pycache__/
+*.pyc
+.worktrees/
