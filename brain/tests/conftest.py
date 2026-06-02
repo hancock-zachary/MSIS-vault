@@ -1,12 +1,10 @@
 import pytest
+import fitz
 from pathlib import Path
-
-FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 @pytest.fixture
 def sample_pdf(tmp_path):
     """Returns path to a minimal test PDF with known text content."""
-    import fitz
     pdf_path = tmp_path / "test.pdf"
     doc = fitz.open()
     page = doc.new_page()
@@ -19,7 +17,7 @@ def sample_pdf(tmp_path):
 def sample_chunks():
     return [
         {
-            "id": "test_p1_c0",
+            "id": "IS 6410_test.pdf_p1_c0",
             "course": "IS 6410",
             "filename": "test.pdf",
             "page": 1,
