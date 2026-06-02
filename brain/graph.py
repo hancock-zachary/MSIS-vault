@@ -104,7 +104,8 @@ def _write_note(note_path: Path, filename: str, course: str, chunk_count: int, r
     if related:
         for doc in sorted(related, key=lambda x: x["similarity"], reverse=True):
             link_title = _note_title(doc["filename"])
-            link_path = f"{doc['course']}/{link_title}"
+            # full vault-relative path so Obsidian resolves the link correctly
+            link_path = f"notes/{doc['course']}/{link_title}"
             lines.append(
                 f"- [[{link_path}|{link_title}]] "
                 f"({doc['course']}, {doc['frequency']} chunk matches, avg sim {doc['similarity']})"
