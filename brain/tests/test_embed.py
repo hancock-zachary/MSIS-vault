@@ -1,4 +1,5 @@
 from unittest.mock import patch, MagicMock
+import brain.config as brain_config
 from brain.embed import embed_text, embed_batch
 
 
@@ -25,3 +26,21 @@ def test_embed_batch_returns_list_of_vectors():
         results = embed_batch(["hello", "world"])
     assert len(results) == 2
     assert len(results[0]) == 768
+
+
+def test_embed_text_openai_path():
+    fake_vector = [0.2] * 1536  # OpenAI embedding size
+    mock_embedding = MagicMock()
+    mock_embedding.embedding = fake_vector
+    mock_response = MagicMock()
+    mock_response.data = [mock_embedding]
+
+    with patch.object(brain_config, "EMBED_PROVIDER", "openai"):
+        with patch("brain.embed._get_openai_client") as mock_client_getter:
+            mock_client = MagicMock()
+            mock_client.embeddings.create.return_value = mock_response
+            mock_client_getter.return_value = mock_client
+            result = embed_text("hello world")
+
+    assert isinstance(result, list)
+    assert len(result) == 1536
