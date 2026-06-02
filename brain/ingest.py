@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from brain.config import VAULT_ROOT, INGESTION_LOG, BM25_PATH
+from brain.config import COURSES_DIR, INGESTION_LOG, BM25_PATH
 from brain.chunk import build_chunks_from_pdf
 from brain.embed import embed_batch
 from brain.index import get_collection, upsert_chunks, build_bm25, load_bm25
@@ -22,14 +22,13 @@ def find_unindexed_pdfs(root: Path, log: dict) -> list[Path]:
 
 
 def _course_from_path(pdf_path: Path) -> str:
-    """Infer course name from parent folder structure."""
-    parts = pdf_path.relative_to(VAULT_ROOT).parts
-    return parts[1] if len(parts) > 2 else parts[0]
+    """Infer course name from courses/ folder structure: courses/<course>/..."""
+    return pdf_path.relative_to(COURSES_DIR).parts[0]
 
 
 def run_ingestion():
     log = load_log(INGESTION_LOG)
-    pdfs = find_unindexed_pdfs(VAULT_ROOT, log)
+    pdfs = find_unindexed_pdfs(COURSES_DIR, log)
     if not pdfs:
         print("Nothing to index.")
         return
