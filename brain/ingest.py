@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 from brain.config import COURSES_DIR, INGESTION_LOG, BM25_PATH
 from brain.chunk import build_chunks_from_pdf
@@ -15,6 +16,25 @@ def load_log(log_path: Path) -> dict:
 def log_indexed(log: dict, pdf_path: Path, log_path: Path):
     log[str(pdf_path)] = "done"
     log_path.write_text(json.dumps(log, indent=2))
+
+
+def _is_quality_chunk(text: str) -> bool:
+    """Return False if text looks like garbled image extraction.
+
+    Cartoons, diagrams, and scanned images produce chunks with a high ratio of
+    single-character words and non-alphabetic noise. We discard those rather
+    than polluting the index with meaningless vectors.
+    """
+    words = text.split()
+    if len(words) < 10:
+        return False  # too short to be meaningful
+    single_char = sum(1 for w in words if len(re.sub(r"[^a-zA-Z]", "", w)) <= 1)
+    if single_char / len(words) > 0.3:
+        return False  # more than 30% single-character words → garbled
+    alpha_chars = sum(1 for c in text if c.isalpha())
+    if alpha_chars / max(len(text), 1) < 0.4:
+        return False  # less than 40% alphabetic characters → noise
+    return True
 
 
 def find_unindexed_pdfs(root: Path, log: dict) -> list[Path]:
@@ -48,6 +68,14 @@ def run_ingestion():
         chunks = build_chunks_from_pdf(pdf_path, course)
         if not chunks:
             print(f"  WARNING: no extractable text in {pdf_path.name}, skipping.")
+            continue
+        before = len(chunks)
+        chunks = [c for c in chunks if _is_quality_chunk(c["text"])]
+        dropped = before - len(chunks)
+        if dropped:
+            print(f"  Dropped {dropped} garbled chunk(s) (image/diagram text).")
+        if not chunks:
+            print(f"  WARNING: all chunks were garbled in {pdf_path.name}, skipping.")
             continue
         vectors = embed_batch([c["text"] for c in chunks])
         upsert_chunks(collection, chunks, vectors)
