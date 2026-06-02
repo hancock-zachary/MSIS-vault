@@ -8,7 +8,7 @@ Re-running is safe — notes are overwritten with fresh similarity data.
 import json
 from collections import defaultdict
 from pathlib import Path
-from brain.config import INGESTION_LOG, NOTES_DIR, GRAPH_TOP_K
+from brain.config import INGESTION_LOG, NOTES_DIR, GRAPH_TOP_K, GRAPH_MIN_SIMILARITY
 from brain.index import get_collection
 
 
@@ -65,6 +65,8 @@ def _find_related_by_chunks(collection, filename: str) -> list[dict]:
         })
 
     ranked.sort(key=lambda x: x["frequency"] * x["similarity"], reverse=True)
+    # apply minimum similarity threshold — don't force connections that aren't real
+    ranked = [r for r in ranked if r["similarity"] >= GRAPH_MIN_SIMILARITY]
     return ranked[:GRAPH_TOP_K]
 
 
