@@ -22,6 +22,8 @@ OLLAMA_URL = "http://localhost:11434/api/embed"
 OLLAMA_MODEL = "nomic-embed-text"
 OPENAI_EMBED_MODEL = "text-embedding-3-small"
 
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
+
 NOTES_DIR = VAULT_ROOT / "notes"
 GRAPH_TOP_K = 10           # maximum related documents per note (actual links may be fewer)
 GRAPH_MIN_SIMILARITY = 0.6 # minimum avg similarity score to include a link at all

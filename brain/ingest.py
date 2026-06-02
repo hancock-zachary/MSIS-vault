@@ -1,8 +1,8 @@
 import json
 import re
 from pathlib import Path
-from brain.config import COURSES_DIR, INGESTION_LOG, BM25_PATH
-from brain.chunk import build_chunks_from_pdf
+from brain.config import COURSES_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
+from brain.chunk import build_chunks_from_file
 from brain.embed import embed_batch
 from brain.index import get_collection, upsert_chunks, build_bm25, load_bm25
 
@@ -37,8 +37,11 @@ def _is_quality_chunk(text: str) -> bool:
     return True
 
 
-def find_unindexed_pdfs(root: Path, log: dict) -> list[Path]:
-    return [p for p in root.rglob("*.pdf") if str(p) not in log]
+def find_unindexed_files(root: Path, log: dict) -> list[Path]:
+    return [
+        p for p in root.rglob("*")
+        if p.suffix.lower() in SUPPORTED_EXTENSIONS and str(p) not in log
+    ]
 
 
 def _course_from_path(pdf_path: Path) -> str:
@@ -48,8 +51,8 @@ def _course_from_path(pdf_path: Path) -> str:
 
 def run_ingestion():
     log = load_log(INGESTION_LOG)
-    pdfs = find_unindexed_pdfs(COURSES_DIR, log)
-    if not pdfs:
+    files = find_unindexed_files(COURSES_DIR, log)
+    if not files:
         print("Nothing to index.")
         return
 
@@ -62,12 +65,16 @@ def run_ingestion():
         existing_chunks = []
 
     all_new_chunks = []
-    for pdf_path in pdfs:
-        course = _course_from_path(pdf_path)
-        print(f"Indexing {pdf_path.name} ({course})...")
-        chunks = build_chunks_from_pdf(pdf_path, course)
+    for file_path in files:
+        course = _course_from_path(file_path)
+        print(f"Indexing {file_path.name} ({course})...")
+        try:
+            chunks = build_chunks_from_file(file_path, course)
+        except ValueError as e:
+            print(f"  Skipping: {e}")
+            continue
         if not chunks:
-            print(f"  WARNING: no extractable text in {pdf_path.name}, skipping.")
+            print(f"  WARNING: no extractable text in {file_path.name}, skipping.")
             continue
         before = len(chunks)
         chunks = [c for c in chunks if _is_quality_chunk(c["text"])]
@@ -75,12 +82,12 @@ def run_ingestion():
         if dropped:
             print(f"  Dropped {dropped} garbled chunk(s) (image/diagram text).")
         if not chunks:
-            print(f"  WARNING: all chunks were garbled in {pdf_path.name}, skipping.")
+            print(f"  WARNING: all chunks were garbled in {file_path.name}, skipping.")
             continue
         vectors = embed_batch([c["text"] for c in chunks])
         upsert_chunks(collection, chunks, vectors)
         all_new_chunks.extend(chunks)
-        log_indexed(log, pdf_path, INGESTION_LOG)
+        log_indexed(log, file_path, INGESTION_LOG)
         print(f"  {len(chunks)} chunks indexed.")
 
     build_bm25(existing_chunks + all_new_chunks, BM25_PATH)

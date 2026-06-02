@@ -1,21 +1,33 @@
 import json
 from unittest.mock import patch, MagicMock
-from brain.ingest import find_unindexed_pdfs, log_indexed, load_log, _is_quality_chunk
+from brain.ingest import find_unindexed_files, log_indexed, load_log, _is_quality_chunk
 
-def test_find_unindexed_pdfs(tmp_path):
+def test_find_unindexed_files_finds_all_types(tmp_path):
     (tmp_path / "course").mkdir()
-    pdf1 = tmp_path / "course" / "slides.pdf"
-    pdf1.touch()
+    files = {
+        tmp_path / "course" / "slides.pdf",
+        tmp_path / "course" / "notes.md",
+        tmp_path / "course" / "reading.txt",
+        tmp_path / "course" / "report.docx",
+    }
+    for f in files:
+        f.touch()
     log = {}
-    result = find_unindexed_pdfs(tmp_path, log)
-    assert pdf1 in result
+    result = set(find_unindexed_files(tmp_path, log))
+    assert files == result
 
-def test_already_indexed_pdf_excluded(tmp_path):
+def test_already_indexed_file_excluded(tmp_path):
     pdf1 = tmp_path / "slides.pdf"
     pdf1.touch()
     log = {str(pdf1): "done"}
-    result = find_unindexed_pdfs(tmp_path, log)
+    result = find_unindexed_files(tmp_path, log)
     assert pdf1 not in result
+
+def test_unsupported_extension_excluded(tmp_path):
+    pptx = tmp_path / "deck.pptx"
+    pptx.touch()
+    result = find_unindexed_files(tmp_path, {})
+    assert pptx not in result
 
 def test_quality_chunk_accepts_normal_text():
     text = "The five Scrum events are Sprint Planning, Daily Scrum, Sprint Review, Sprint Retrospective, and the Sprint itself."

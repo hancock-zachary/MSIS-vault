@@ -1,14 +1,63 @@
-from brain.chunk import extract_pages, chunk_page, chunk_slides, is_slide_deck, build_chunks_from_pdf
+from pathlib import Path
+from brain.chunk import (
+    extract_pages, chunk_page, chunk_slides, is_slide_deck,
+    build_chunks_from_file, _extract_pages_text,
+)
 from brain.config import SLIDE_PAGES_PER_CHUNK
 
 
-def test_extract_pages_returns_page_dicts(sample_pdf):
+def test_extract_pages_pdf(sample_pdf):
     pages = extract_pages(sample_pdf, course="IS 6410")
     assert len(pages) >= 1
     assert pages[0]["page"] == 1
     assert "Entity-Relationship" in pages[0]["text"]
     assert pages[0]["course"] == "IS 6410"
     assert pages[0]["filename"] == sample_pdf.name
+
+
+def test_extract_pages_txt(tmp_path):
+    txt_file = tmp_path / "notes.txt"
+    txt_file.write_text("This is a plain text note about project management.", encoding="utf-8")
+    pages = extract_pages(txt_file, course="IS 6410")
+    assert len(pages) == 1
+    assert "project management" in pages[0]["text"]
+    assert pages[0]["page"] == 1
+
+
+def test_extract_pages_md(tmp_path):
+    md_file = tmp_path / "notes.md"
+    md_file.write_text("# Sprint Planning\n\nSprint planning is the first Scrum event.", encoding="utf-8")
+    pages = extract_pages(md_file, course="IS 6410")
+    assert len(pages) == 1
+    assert "Sprint planning" in pages[0]["text"]
+
+
+def test_extract_pages_md_strips_frontmatter(tmp_path):
+    md_file = tmp_path / "note.md"
+    md_file.write_text("---\ntags: [IS-6410]\ndate: 2026-06-01\n---\n\nActual content here.", encoding="utf-8")
+    pages = extract_pages(md_file, course="IS 6410")
+    assert "Actual content here" in pages[0]["text"]
+    assert "tags:" not in pages[0]["text"]
+
+
+def test_extract_pages_unsupported_raises(tmp_path):
+    bad_file = tmp_path / "file.pptx"
+    bad_file.touch()
+    try:
+        extract_pages(bad_file, course="IS 6410")
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "Unsupported" in str(e)
+
+
+def test_extract_pages_doc_raises_helpful_error(tmp_path):
+    doc_file = tmp_path / "old.doc"
+    doc_file.touch()
+    try:
+        extract_pages(doc_file, course="IS 6410")
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert ".docx" in str(e)
 
 
 def test_chunk_page_single_chunk_for_short_text():
@@ -26,7 +75,7 @@ def test_chunk_page_single_chunk_for_short_text():
 
 
 def test_chunk_page_overlaps_long_text():
-    long_text = "word " * 600  # ~600 tokens
+    long_text = "word " * 600
     page = {
         "course": "IS 6410", "filename": "test.pdf",
         "page": 2, "slide_title": "Long Slide", "text": long_text,
@@ -49,7 +98,7 @@ def test_is_slide_deck_detects_short_pages():
 
 
 def test_is_slide_deck_rejects_dense_text():
-    dense = "word " * 200  # ~200 tokens per page — above threshold
+    dense = "word " * 200
     pages = [_make_page(text=dense) for _ in range(3)]
     assert is_slide_deck(pages) is False
 
@@ -57,9 +106,7 @@ def test_is_slide_deck_rejects_dense_text():
 def test_chunk_slides_groups_pages():
     pages = [_make_page(page=i, text=f"slide {i} content") for i in range(1, 9)]
     chunks = chunk_slides(pages)
-    # 8 pages / 4 per chunk = 2 chunks
     assert len(chunks) == 8 // SLIDE_PAGES_PER_CHUNK
-    # each chunk contains text from all its pages
     assert "slide 1 content" in chunks[0]["text"]
     assert "slide 4 content" in chunks[0]["text"]
     assert "slide 5 content" in chunks[1]["text"]
@@ -73,7 +120,6 @@ def test_chunk_slides_id_uses_first_page():
 
 
 def test_chunk_slides_handles_remainder():
-    # 6 pages with SLIDE_PAGES_PER_CHUNK=4 → 2 chunks (4 + 2)
     pages = [_make_page(page=i, text=f"slide {i}") for i in range(1, 7)]
     chunks = chunk_slides(pages)
     assert len(chunks) == 2
@@ -81,8 +127,22 @@ def test_chunk_slides_handles_remainder():
     assert "slide 6" in chunks[1]["text"]
 
 
-def test_build_chunks_from_pdf_detects_slides(sample_pdf):
-    # sample_pdf has very short text — should be detected as slide deck
-    chunks = build_chunks_from_pdf(sample_pdf, course="IS 6410")
+def test_build_chunks_from_file_pdf(sample_pdf):
+    chunks = build_chunks_from_file(sample_pdf, course="IS 6410")
     assert len(chunks) >= 1
     assert all("id" in c and "text" in c and "page" in c for c in chunks)
+
+
+def test_build_chunks_from_file_txt(tmp_path):
+    txt_file = tmp_path / "reading.txt"
+    txt_file.write_text(("word " * 600), encoding="utf-8")
+    chunks = build_chunks_from_file(txt_file, course="IS 6410")
+    assert len(chunks) >= 1
+    assert all("id" in c and "text" in c for c in chunks)
+
+
+def test_build_chunks_from_file_md(tmp_path):
+    md_file = tmp_path / "note.md"
+    md_file.write_text("# Topic\n\n" + ("word " * 50), encoding="utf-8")
+    chunks = build_chunks_from_file(md_file, course="IS 6410")
+    assert len(chunks) >= 1
