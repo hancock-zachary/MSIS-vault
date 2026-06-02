@@ -33,6 +33,23 @@ A mode where Claude asks *you* questions based on your course material instead o
 
 ## Pipeline Improvements
 
+### Document Trust / Source Weighting
+Different document types have different levels of authority. Lecture slides from a professor are a primary source; assigned readings are secondary; student assignments and coursework are the least authoritative and most likely to contain errors or incomplete reasoning. The pipeline currently treats all documents equally during retrieval and reranking.
+
+Implementing trust tiers would work by:
+1. Tagging each document at ingestion time with a `source_type` metadata field (e.g. `slides`, `reading`, `assignment`, `notes`)
+2. Applying a score multiplier during reranking — slides get a boost, assignments get a penalty
+3. Making the multipliers configurable in `config.py` so they can be tuned over time
+
+This becomes critical when assignments and coursework enter the index — an incorrect answer you wrote on an exam should not be cited as a factual source.
+
+### Slide-Aware Chunking Strategy
+The current 500-token overlapping window treats slide decks and dense readings identically. Slides have very short pages (50-100 tokens of bullet points) which produces sparse, low-signal embeddings that cluster only with other slides from the same course rather than connecting to semantically related readings.
+
+The fix is a document-type-aware chunking strategy:
+- **Dense text** (readings, papers): keep overlapping 500-token windows as-is
+- **Slides**: aggregate 3-5 consecutive pages into one chunk before embedding, preserving the narrative arc of a lecture section rather than embedding individual bullet-point slides in isolation
+
 ### Multi-modal: Slide Images and Diagrams
 Current pipeline extracts text only. Many slides contain diagrams, charts, and figures that carry meaning. Would require a vision model to caption or embed images alongside text chunks.
 
