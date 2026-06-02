@@ -57,8 +57,9 @@ def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL) -> 
 
     For each query variant:
     - Run dense (embedding) retrieval
-    - Run sparse (BM25) retrieval
+    - Run sparse (BM25) retrieval if available
     Both results feed into reciprocal rank fusion.
+    Falls back to dense-only if BM25 index is not yet built.
 
     Args:
         query_variants: List of query rewrite/reformulations.
@@ -68,14 +69,21 @@ def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL) -> 
         Deduplicated and RRF-fused chunk list.
     """
     collection = get_collection()
-    bm25_index, bm25_corpus, bm25_chunks = load_bm25(BM25_PATH)
+
+    try:
+        bm25_index, bm25_corpus, bm25_chunks = load_bm25(BM25_PATH)
+        bm25_available = True
+    except (FileNotFoundError, Exception):
+        bm25_available = False
 
     all_ranked_lists = []
     for variant in query_variants:
         vec = embed_text(variant)
         dense_results = query_dense(collection, vec, top_k)
-        sparse_results = query_bm25(bm25_index, bm25_corpus, bm25_chunks, variant, top_k)
-        all_ranked_lists.extend([dense_results, sparse_results])
+        all_ranked_lists.append(dense_results)
+        if bm25_available:
+            sparse_results = query_bm25(bm25_index, bm25_corpus, bm25_chunks, variant, top_k)
+            all_ranked_lists.append(sparse_results)
 
     fused = reciprocal_rank_fusion(all_ranked_lists)
     return deduplicate_by_id(fused)
