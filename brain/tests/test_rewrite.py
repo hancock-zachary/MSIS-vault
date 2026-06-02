@@ -1,3 +1,4 @@
+import subprocess
 from unittest.mock import patch
 from brain.rewrite import rewrite_query, parse_variants
 
@@ -25,3 +26,10 @@ def test_rewrite_query_returns_list_of_strings():
     assert all(isinstance(v, str) for v in variants)
     # original query always included
     assert "What is an ERD?" in variants
+
+
+def test_rewrite_query_falls_back_on_timeout():
+    with patch("brain.rewrite.subprocess.run") as mock_run:
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="claude", timeout=30)
+        variants = rewrite_query("What is an ERD?")
+    assert variants == ["What is an ERD?"]

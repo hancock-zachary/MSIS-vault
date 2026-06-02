@@ -19,10 +19,13 @@ User question: {question}
 
 def rewrite_query(question: str) -> list[str]:
     prompt = REWRITE_PROMPT.format(question=question)
-    result = subprocess.run(
-        ["claude", "-p", prompt],
-        capture_output=True, text=True, timeout=30,
-    )
+    try:
+        result = subprocess.run(
+            ["claude", "-p", prompt],
+            capture_output=True, text=True, timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        return [question]
     if result.returncode != 0 or not result.stdout.strip():
         return [question]  # fallback: use original
     variants = parse_variants(result.stdout)
