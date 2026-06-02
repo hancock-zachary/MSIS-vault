@@ -1,5 +1,5 @@
 .env
-courses/**/*.pdf
+# raw/ and notes/ are intentionally tracked for sharing
 brain/chroma/
 brain/bm25.pkl
 brain/ingestion_log.json

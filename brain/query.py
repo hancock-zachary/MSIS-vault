@@ -42,4 +42,4 @@ if __name__ == "__main__":
         print("Usage: python brain/query.py \"Your question\"")
         sys.exit(1)
     question = " ".join(sys.argv[1:])
-    print(run_query(question))
+    sys.stdout.buffer.write((run_query(question) + "\n").encode("utf-8"))

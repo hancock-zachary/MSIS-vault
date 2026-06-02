@@ -25,14 +25,18 @@ def embed_text(text: str) -> list[float]:
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
     if config.EMBED_PROVIDER == "ollama":
-        return [_ollama_embed(t) for t in texts]
+        return _ollama_embed_batch(texts)
     return _openai_embed(texts)
 
 
 def _ollama_embed(text: str) -> list[float]:
-    resp = requests.post(config.OLLAMA_URL, json={"model": config.OLLAMA_MODEL, "prompt": text})
+    return _ollama_embed_batch([text])[0]
+
+
+def _ollama_embed_batch(texts: list[str]) -> list[list[float]]:
+    resp = requests.post(config.OLLAMA_URL, json={"model": config.OLLAMA_MODEL, "input": texts})
     resp.raise_for_status()
-    return resp.json()["embedding"]
+    return resp.json()["embeddings"]
 
 
 def _openai_embed(texts: list[str]) -> list[list[float]]:
