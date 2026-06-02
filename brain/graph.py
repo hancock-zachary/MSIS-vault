@@ -93,8 +93,9 @@ def _write_note(note_path: Path, filename: str, course: str, chunk_count: int, r
     if related:
         for doc in related:
             link_title = _note_title(doc["filename"])
+            link_path = f"{doc['course']}/{link_title}"
             lines.append(
-                f"- [[{link_title}]] "
+                f"- [[{link_path}|{link_title}]] "
                 f"({doc['course']}, {doc['frequency']} chunk matches, avg sim {doc['similarity']})"
             )
     else:
@@ -137,7 +138,9 @@ def run_graph():
 
         related = _find_related_by_chunks(collection, filename)
 
-        note_path = NOTES_DIR / f"{title}.md"
+        course_dir = NOTES_DIR / course
+        course_dir.mkdir(exist_ok=True)
+        note_path = course_dir / f"{title}.md"
         _write_note(note_path, filename, course, chunk_count, related)
         print(f"  {title}.md -> {len(related)} links")
 
