@@ -1,7 +1,6 @@
 import json
-import sys
 from pathlib import Path
-from brain.config import VAULT_ROOT, INGESTION_LOG, BM25_PATH, TOP_K_RETRIEVAL
+from brain.config import VAULT_ROOT, INGESTION_LOG, BM25_PATH
 from brain.chunk import build_chunks_from_pdf
 from brain.embed import embed_batch
 from brain.index import get_collection, upsert_chunks, build_bm25, load_bm25
@@ -39,7 +38,7 @@ def run_ingestion():
 
     # Load existing BM25 chunks to append to
     if BM25_PATH.exists():
-        _, _, existing_chunks = load_bm25(BM25_PATH)
+        _, _, existing_chunks = load_bm25(BM25_PATH)  # (index, tokenized_corpus, chunks)
     else:
         existing_chunks = []
 
@@ -48,6 +47,9 @@ def run_ingestion():
         course = _course_from_path(pdf_path)
         print(f"Indexing {pdf_path.name} ({course})...")
         chunks = build_chunks_from_pdf(pdf_path, course)
+        if not chunks:
+            print(f"  WARNING: no extractable text in {pdf_path.name}, skipping.")
+            continue
         vectors = embed_batch([c["text"] for c in chunks])
         upsert_chunks(collection, chunks, vectors)
         all_new_chunks.extend(chunks)
