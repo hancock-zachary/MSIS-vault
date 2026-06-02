@@ -9,6 +9,8 @@ INGESTION_LOG = BRAIN_DIR / "ingestion_log.json"
 
 CHUNK_SIZE_TOKENS = 500
 CHUNK_OVERLAP_TOKENS = 50
+SLIDE_PAGE_TOKEN_THRESHOLD = 150  # avg tokens/page below this → treat as slide deck
+SLIDE_PAGES_PER_CHUNK = 4         # consecutive pages grouped into one slide chunk
 TOP_K_RETRIEVAL = 20      # per retrieval method per variant
 TOP_K_RERANK = 8          # final chunks sent to Claude
 RRF_K = 60                # RRF constant

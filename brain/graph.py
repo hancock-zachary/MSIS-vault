@@ -6,7 +6,7 @@ the most semantically similar other documents. Run after brain/ingest.py.
 Re-running is safe — notes are overwritten with fresh similarity data.
 """
 import json
-import numpy as np
+from collections import defaultdict
 from pathlib import Path
 from brain.config import INGESTION_LOG, NOTES_DIR, GRAPH_TOP_K
 from brain.index import get_collection
@@ -17,39 +17,55 @@ def _note_title(filename: str) -> str:
     return Path(filename).stem
 
 
-def _document_embedding(collection, filename: str) -> np.ndarray | None:
-    """Average all chunk embeddings for a file to get a document-level vector."""
+def _find_related_by_chunks(collection, filename: str) -> list[dict]:
+    """Find related documents by querying with every chunk of this document.
+
+    Rather than averaging all chunk embeddings into one blurry document vector,
+    each chunk gets its own similarity query. External documents are ranked by
+    frequency (how many chunks matched) × average similarity — so a large slide
+    deck that partially overlaps with an external reading will surface that link
+    even if the rest of the deck is unrelated.
+    """
     result = collection.get(
         where={"filename": filename},
-        include=["embeddings"],
+        include=["embeddings", "metadatas"],
     )
-    if result["embeddings"] is None or len(result["embeddings"]) == 0:
-        return None
-    return np.mean(result["embeddings"], axis=0).tolist()
+    embeddings = result.get("embeddings")
+    if embeddings is None or len(embeddings) == 0:
+        return []
 
-
-def _find_related(collection, doc_embedding: list[float], exclude_filename: str) -> list[dict]:
-    """Return top GRAPH_TOP_K documents most similar to doc_embedding, excluding self."""
-    results = collection.query(
-        query_embeddings=[doc_embedding],
-        n_results=min(50, collection.count()),
+    # batch query: one call with all chunk embeddings
+    n_results = min(20, collection.count())
+    query_results = collection.query(
+        query_embeddings=embeddings,
+        n_results=n_results,
         include=["metadatas", "distances"],
     )
-    seen_files = {exclude_filename}
-    related = []
-    for metadata, distance in zip(results["metadatas"][0], results["distances"][0]):
-        fname = metadata.get("filename", "")
-        if fname in seen_files:
-            continue
-        seen_files.add(fname)
-        related.append({
-            "filename": fname,
-            "course": metadata.get("course", ""),
-            "similarity": round(1.0 - distance, 3),
+
+    doc_scores: dict[str, list[float]] = defaultdict(list)
+    doc_course: dict[str, str] = {}
+
+    for metadatas, distances in zip(query_results["metadatas"], query_results["distances"]):
+        for meta, dist in zip(metadatas, distances):
+            other_file = meta.get("filename", "")
+            if other_file == filename:
+                continue
+            doc_scores[other_file].append(1.0 - dist)
+            doc_course[other_file] = meta.get("course", "")
+
+    ranked = []
+    for other_file, scores in doc_scores.items():
+        frequency = len(scores)
+        avg_sim = sum(scores) / frequency
+        ranked.append({
+            "filename": other_file,
+            "course": doc_course[other_file],
+            "similarity": round(avg_sim, 3),
+            "frequency": frequency,
         })
-        if len(related) >= GRAPH_TOP_K:
-            break
-    return related
+
+    ranked.sort(key=lambda x: x["frequency"] * x["similarity"], reverse=True)
+    return ranked[:GRAPH_TOP_K]
 
 
 def _write_note(note_path: Path, filename: str, course: str, chunk_count: int, related: list[dict]):
@@ -66,7 +82,10 @@ def _write_note(note_path: Path, filename: str, course: str, chunk_count: int, r
     if related:
         for doc in related:
             link_title = _note_title(doc["filename"])
-            lines.append(f"- [[{link_title}]] ({doc['course']}, similarity {doc['similarity']})")
+            lines.append(
+                f"- [[{link_title}]] "
+                f"({doc['course']}, {doc['frequency']} chunk matches, avg sim {doc['similarity']})"
+            )
     else:
         lines.append("_No related documents found._")
 
@@ -94,7 +113,6 @@ def run_graph():
         filename = pdf_path.name
         title = _note_title(filename)
 
-        # get chunk count and course from ChromaDB metadata
         meta_result = collection.get(
             where={"filename": filename},
             include=["metadatas"],
@@ -106,12 +124,7 @@ def run_graph():
         chunk_count = len(meta_result["ids"])
         course = meta_result["metadatas"][0].get("course", "Unknown")
 
-        doc_embedding = _document_embedding(collection, filename)
-        if doc_embedding is None:
-            print(f"  Skipping {filename} — no embeddings found.")
-            continue
-
-        related = _find_related(collection, doc_embedding, exclude_filename=filename)
+        related = _find_related_by_chunks(collection, filename)
 
         note_path = NOTES_DIR / f"{title}.md"
         _write_note(note_path, filename, course, chunk_count, related)

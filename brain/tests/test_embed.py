@@ -7,7 +7,7 @@ def test_embed_text_returns_list_of_floats():
     fake_vector = [0.1] * 768
     with patch("brain.embed.requests.post") as mock_post:
         mock_post.return_value = MagicMock(
-            json=lambda: {"embedding": fake_vector},
+            json=lambda: {"embeddings": [fake_vector]},
             raise_for_status=lambda: None,
         )
         result = embed_text("hello world")
@@ -20,7 +20,7 @@ def test_embed_batch_returns_list_of_vectors():
     fake_vector = [0.1] * 768
     with patch("brain.embed.requests.post") as mock_post:
         mock_post.return_value = MagicMock(
-            json=lambda: {"embedding": fake_vector},
+            json=lambda: {"embeddings": [fake_vector, fake_vector]},
             raise_for_status=lambda: None,
         )
         results = embed_batch(["hello", "world"])
