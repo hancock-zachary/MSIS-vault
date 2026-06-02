@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 import fitz  # pymupdf
 import tiktoken
@@ -8,27 +7,26 @@ _enc = tiktoken.get_encoding("cl100k_base")
 
 
 def extract_pages(pdf_path: Path, course: str) -> list[dict]:
-    doc = fitz.open(str(pdf_path))
-    outline = {p: title for title, _, p in _extract_outline(doc)}
-    pages = []
-    for i, page in enumerate(doc):
-        text = page.get_text().strip()
-        if not text:
-            continue
-        pages.append({
-            "course": course,
-            "filename": pdf_path.name,
-            "page": i + 1,
-            "slide_title": outline.get(i, ""),
-            "text": text,
-        })
-    doc.close()
+    with fitz.open(str(pdf_path)) as doc:
+        outline = {p: title for title, p in _extract_outline(doc)}
+        pages = []
+        for i, page in enumerate(doc):
+            text = page.get_text().strip()
+            if not text:
+                continue
+            pages.append({
+                "course": course,
+                "filename": pdf_path.name,
+                "page": i + 1,
+                "slide_title": outline.get(i, ""),
+                "text": text,
+            })
     return pages
 
 
 def _extract_outline(doc) -> list[tuple]:
     try:
-        return [(title, _, page) for title, _, page, *_ in doc.get_toc()]
+        return [(entry[0], entry[2]) for entry in doc.get_toc()]
     except Exception:
         return []
 
