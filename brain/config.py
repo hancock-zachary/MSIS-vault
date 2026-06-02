@@ -1,7 +1,8 @@
 from pathlib import Path
 
 VAULT_ROOT = Path(__file__).parent.parent
-COURSES_DIR = VAULT_ROOT / "courses"
+COURSES_DIR = VAULT_ROOT / "courses"  # kept for reference
+RAW_DIR = VAULT_ROOT / "raw"
 BRAIN_DIR = VAULT_ROOT / "brain"
 CHROMA_DIR = BRAIN_DIR / "chroma"
 BM25_PATH = BRAIN_DIR / "bm25.pkl"

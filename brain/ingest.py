@@ -1,7 +1,7 @@
 import json
 import re
 from pathlib import Path
-from brain.config import COURSES_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
+from brain.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
 from brain.chunk import build_chunks_from_file
 from brain.embed import embed_batch
 from brain.index import get_collection, upsert_chunks, build_bm25, load_bm25
@@ -44,14 +44,20 @@ def find_unindexed_files(root: Path, log: dict) -> list[Path]:
     ]
 
 
-def _course_from_path(pdf_path: Path) -> str:
-    """Infer course name from courses/ folder structure: courses/<course>/..."""
-    return pdf_path.relative_to(COURSES_DIR).parts[0]
+def _course_from_path(file_path: Path) -> str:
+    """Infer course name from the first subfolder under raw/.
+
+    raw/IS 6410/slides/file.pdf  →  "IS 6410"
+    raw/IS 6410/file.pdf         →  "IS 6410"
+    raw/file.pdf                 →  "General"
+    """
+    parts = file_path.relative_to(RAW_DIR).parts
+    return parts[0] if len(parts) > 1 else "General"
 
 
 def run_ingestion():
     log = load_log(INGESTION_LOG)
-    files = find_unindexed_files(COURSES_DIR, log)
+    files = find_unindexed_files(RAW_DIR, log)
     if not files:
         print("Nothing to index.")
         return
