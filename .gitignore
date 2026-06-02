@@ -1,3 +1,4 @@
+.env
 courses/**/*.pdf
 brain/chroma/
 brain/bm25.pkl
