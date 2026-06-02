@@ -29,5 +29,11 @@ python brain/ingest.py
 ## Running tests
 
 ```
-pytest brain/tests/ -v
+uv run pytest brain/tests/ -v
+```
+
+## Setup (first time)
+
+```
+uv sync --extra dev
 ```
