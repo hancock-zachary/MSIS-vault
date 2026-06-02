@@ -26,8 +26,8 @@ OPENAI_EMBED_MODEL = "text-embedding-3-small"
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 
 NOTES_DIR = VAULT_ROOT / "notes"
-GRAPH_TOP_K = 10           # maximum related documents per note (actual links may be fewer)
-GRAPH_MIN_SIMILARITY = 0.6 # minimum avg similarity score to include a link at all
+GRAPH_TOP_K = 10           # candidate pool size per document before mutual filtering
+GRAPH_MIN_SIMILARITY = 0.72 # minimum avg similarity — filters weak vocabulary overlap
 
 CHROMA_COLLECTION = "vault"
 CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
