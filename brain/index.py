@@ -49,4 +49,8 @@ def query_bm25(index, corpus, chunks: list[dict], query: str, top_k: int) -> lis
     tokens = query.lower().split()
     scores = index.get_scores(tokens)
     ranked = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[:top_k]
-    return [{"id": chunks[i]["id"], "text": chunks[i]["text"], "score": float(s), **{k: v for k, v in chunks[i].items() if k not in ("id", "text")}} for i, s in ranked]
+    return [
+        {"id": chunks[i]["id"], "text": chunks[i]["text"], "score": float(s),
+         **{k: v for k, v in chunks[i].items() if k not in ("id", "text")}}
+        for i, s in ranked if s > 0
+    ]
