@@ -48,6 +48,17 @@ This becomes critical when assignments and coursework enter the index — an inc
 ### Multi-modal: Slide Images and Diagrams
 Current pipeline extracts text only. Many slides contain diagrams, charts, and figures that carry meaning. Would require a vision model to caption or embed images alongside text chunks.
 
+### Audio/Visual Ingestion
+Lecture recordings, video walkthroughs, and recorded office hours contain content that never appears in slides. Ingesting these would make the second brain significantly more complete, especially for courses where the professor covers material verbally that isn't in the slides.
+
+The pipeline would be:
+1. **Audio extraction** — pull audio track from video files (MP4, MOV, etc.) using `ffmpeg`
+2. **Transcription** — convert speech to text using a local Whisper model (`openai-whisper` or `faster-whisper`) — runs on CPU, no API cost
+3. **Chunking** — split transcripts by time window (e.g. 2-minute segments) rather than token count, preserving temporal context
+4. **Indexing** — same ChromaDB + BM25 pipeline as text documents, with metadata including timestamp so citations can reference the video at a specific time (e.g. `[source: lecture3.mp4, 14:32]`)
+
+The biggest wins would be: capturing worked examples explained verbally, Q&A sessions, and any content a professor adds beyond the slide deck.
+
 ### ~~Real Entailment Verification (NLI model)~~ ✅ Done
 
 ### Evaluation Script
