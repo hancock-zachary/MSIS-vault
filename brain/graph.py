@@ -23,7 +23,7 @@ def _document_embedding(collection, filename: str) -> np.ndarray | None:
         where={"filename": filename},
         include=["embeddings"],
     )
-    if not result["embeddings"]:
+    if result["embeddings"] is None or len(result["embeddings"]) == 0:
         return None
     return np.mean(result["embeddings"], axis=0).tolist()
 
@@ -115,7 +115,7 @@ def run_graph():
 
         note_path = NOTES_DIR / f"{title}.md"
         _write_note(note_path, filename, course, chunk_count, related)
-        print(f"  {title}.md → {len(related)} links")
+        print(f"  {title}.md -> {len(related)} links")
 
     print(f"\nDone. {len(indexed_pdfs)} notes written to notes/")
     print("Open Obsidian and switch to Graph View to see connections.")
