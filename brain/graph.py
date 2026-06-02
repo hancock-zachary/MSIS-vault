@@ -68,9 +68,20 @@ def _find_related_by_chunks(collection, filename: str) -> list[dict]:
     return ranked[:GRAPH_TOP_K]
 
 
+def _course_tag(course: str) -> str:
+    """Convert 'IS 6410' → 'IS-6410' for use as an Obsidian tag."""
+    return course.replace(" ", "-")
+
+
 def _write_note(note_path: Path, filename: str, course: str, chunk_count: int, related: list[dict]):
     title = _note_title(filename)
+    tag = _course_tag(course)
     lines = [
+        "---",
+        f"course: {course}",
+        f"tags: [{tag}]",
+        "---",
+        "",
         f"# {title}",
         "",
         f"**Course:** {course}",
