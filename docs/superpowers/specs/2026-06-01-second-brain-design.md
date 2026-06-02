@@ -18,7 +18,7 @@
 ## 2. Architecture Overview
 
 ```
-PDFs (vault)
+PDFs (courses/)
     │
     ▼
 [Ingestion Pipeline]
@@ -26,6 +26,11 @@ PDFs (vault)
     │
     ├──▶ ChromaDB (dense vectors, nomic-embed-text via Ollama)
     └──▶ BM25 index (sparse keyword, rank_bm25, pickled)
+    │
+    ▼
+[Graph Generator]
+    │  document-level embeddings → similarity → Obsidian wikilinks
+    └──▶ notes/ (one .md per PDF, [[wikilinks]] to top-5 related docs)
     
 Query
     │
@@ -160,18 +165,31 @@ Returns formatted context block with top-K chunks and metadata, ready for Claude
 ```
 Vault/
   University of Utah - MSIS/
-    IS 6410/
-      Slides/          ← PDFs live here
+    courses/
+      IS 6410/
+        slides/          ← PDFs live here
+        readings/
+        additional_files/
+      IS 6495/
+        ...
+    notes/               ← generated Obsidian notes (one per PDF, with wikilinks)
     brain/
-      ingest.py        ← ingestion pipeline
-      query.py         ← query CLI
-      rewrite.py       ← agentic query rewriter
-      rerank.py        ← cross-encoder reranker
-      verify.py        ← citation verifier
-      chroma/          ← ChromaDB persistence
-      bm25.pkl         ← BM25 index
-      ingestion_log.json
+      ingest.py          ← ingestion pipeline
+      graph.py           ← Obsidian graph note generator
+      query.py           ← query CLI
+      rewrite.py         ← agentic query rewriter
+      rerank.py          ← cross-encoder reranker
+      verify.py          ← citation verifier
+      config.py          ← all tunable constants
+      embed.py           ← embedding provider (Ollama / OpenAI)
+      chunk.py           ← PDF extraction and chunking
+      index.py           ← ChromaDB + BM25 index management
+      retrieve.py        ← hybrid retrieval + RRF fusion
+      chroma/            ← ChromaDB persistence (gitignored)
+      bm25.pkl           ← BM25 index (gitignored)
+      ingestion_log.json ← tracks indexed files (gitignored)
     CLAUDE.md
+    pyproject.toml
 ```
 
 ---
@@ -192,7 +210,28 @@ Vault/
 
 ---
 
-## 11. Out of Scope (for now)
+## 11. Graph View Generation
+
+`brain/graph.py` generates one Obsidian markdown note per indexed PDF and populates it with `[[wikilinks]]` to the most semantically similar other documents. This makes Obsidian's graph view reflect genuine conceptual relationships across all courses.
+
+**How it works:**
+1. For each PDF in `ingestion_log.json`, fetch all its chunk embeddings from ChromaDB
+2. Average them into a single document-level embedding
+3. Query ChromaDB for the top-50 most similar chunks from *other* files
+4. Deduplicate to unique filenames, take the top `GRAPH_TOP_K` (default: 5)
+5. Write a markdown note to `notes/<title>.md` with metadata and wikilinks
+
+**Usage:**
+```
+uv run python brain/ingest.py   # index PDFs first
+uv run python brain/graph.py   # then generate notes
+```
+
+Re-running `graph.py` is safe — notes are overwritten with fresh similarity data each time.
+
+---
+
+## 12. Out of Scope (for now)
 
 - Obsidian plugin UI (future phase)
 - Automatic ingestion on file save

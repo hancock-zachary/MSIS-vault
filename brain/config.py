@@ -16,9 +16,12 @@ RERANK_THRESHOLD = 0.0    # minimum cross-encoder score (0.0 = no filter)
 ENTAILMENT_THRESHOLD = 0.3  # minimum score to consider a citation verified
 
 EMBED_PROVIDER = "ollama"   # "ollama" | "openai"
-OLLAMA_URL = "http://localhost:11434/api/embeddings"
+OLLAMA_URL = "http://localhost:11434/api/embed"
 OLLAMA_MODEL = "nomic-embed-text"
 OPENAI_EMBED_MODEL = "text-embedding-3-small"
+
+NOTES_DIR = VAULT_ROOT / "notes"
+GRAPH_TOP_K = 5            # related documents shown per note in graph view
 
 CHROMA_COLLECTION = "vault"
 CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"

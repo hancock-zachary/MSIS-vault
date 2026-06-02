@@ -23,8 +23,10 @@ When the user asks any factual question, you MUST:
 
 When the user adds new PDFs to the vault:
 ```
-python brain/ingest.py
+uv run python brain/ingest.py
+uv run python brain/graph.py
 ```
+Run both — ingest indexes the content, graph regenerates the Obsidian note connections.
 
 ## Running tests
 
