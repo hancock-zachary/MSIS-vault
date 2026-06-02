@@ -1,4 +1,6 @@
-from brain.verify import parse_citations, format_verified_response, VerifiedClaim
+from unittest.mock import patch, MagicMock
+import numpy as np
+from brain.verify import parse_citations, format_verified_response, verify_claims, VerifiedClaim
 
 
 def test_parse_citations_extracts_inline_sources():
@@ -33,3 +35,49 @@ def test_format_verified_response_shows_grounding_ratio():
     output = format_verified_response(claims)
     assert "1/2 claims verified" in output
     assert "⚠ unverified" in output
+
+
+def test_verify_claims_marks_entailed_claim_verified():
+    claims = [VerifiedClaim("The Scrum Master removes impediments", "scrum.pdf", 5, None, False)]
+    chunks = [{"filename": "scrum.pdf", "page": 5, "text": "The Scrum Master removes impediments for the team."}]
+
+    mock_model = MagicMock()
+    # NLI returns (n_pairs, 3) softmax probabilities — entailment is index 1
+    mock_model.predict.return_value = np.array([[0.05, 0.90, 0.05]])
+    mock_model.model.config.id2label = {0: "contradiction", 1: "entailment", 2: "neutral"}
+
+    with patch("brain.verify._get_nli_model", return_value=(mock_model, 1)):
+        result = verify_claims(claims, chunks)
+
+    assert result[0].verified is True
+    assert result[0].chunk_text is not None
+
+
+def test_verify_claims_flags_contradicted_claim_unverified():
+    claims = [VerifiedClaim("The Scrum Master manages the team", "scrum.pdf", 5, None, False)]
+    chunks = [{"filename": "scrum.pdf", "page": 5, "text": "The Scrum Master has no authority over the team."}]
+
+    mock_model = MagicMock()
+    # High contradiction score, low entailment
+    mock_model.predict.return_value = np.array([[0.85, 0.05, 0.10]])
+    mock_model.model.config.id2label = {0: "contradiction", 1: "entailment", 2: "neutral"}
+
+    with patch("brain.verify._get_nli_model", return_value=(mock_model, 1)):
+        result = verify_claims(claims, chunks)
+
+    assert result[0].verified is False
+
+
+def test_verify_claims_skips_uncited_claims():
+    claims = [VerifiedClaim("Some uncited claim", None, None, None, False)]
+    result = verify_claims(claims, [])
+    assert result[0].verified is False
+    assert result[0].chunk_text is None
+
+
+def test_verify_claims_skips_missing_chunk():
+    claims = [VerifiedClaim("A claim", "missing.pdf", 99, None, False)]
+    chunks = [{"filename": "other.pdf", "page": 1, "text": "irrelevant"}]
+    with patch("brain.verify._get_nli_model"):
+        result = verify_claims(claims, chunks)
+    assert result[0].verified is False

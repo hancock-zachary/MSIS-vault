@@ -43,15 +43,12 @@ Implementing trust tiers would work by:
 
 This becomes critical when assignments and coursework enter the index — an incorrect answer you wrote on an exam should not be cited as a factual source.
 
-### Slide-Aware Chunking Strategy
-The current 500-token overlapping window treats slide decks and dense readings identically. Slides have very short pages (50-100 tokens of bullet points) which produces sparse, low-signal embeddings that cluster only with other slides from the same course rather than connecting to semantically related readings.
-
-The fix is a document-type-aware chunking strategy:
-- **Dense text** (readings, papers): keep overlapping 500-token windows as-is
-- **Slides**: aggregate 3-5 consecutive pages into one chunk before embedding, preserving the narrative arc of a lecture section rather than embedding individual bullet-point slides in isolation
+### ~~Slide-Aware Chunking Strategy~~ ✅ Done
 
 ### Multi-modal: Slide Images and Diagrams
 Current pipeline extracts text only. Many slides contain diagrams, charts, and figures that carry meaning. Would require a vision model to caption or embed images alongside text chunks.
+
+### ~~Real Entailment Verification (NLI model)~~ ✅ Done
 
 ### Evaluation Script
 A batch evaluation harness that runs a set of known questions against the pipeline and scores: retrieval precision, citation accuracy, and grounding ratio. Would make it easy to detect regressions when tuning config parameters.

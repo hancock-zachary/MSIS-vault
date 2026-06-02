@@ -15,7 +15,7 @@ TOP_K_RETRIEVAL = 20      # per retrieval method per variant
 TOP_K_RERANK = 8          # final chunks sent to Claude
 RRF_K = 60                # RRF constant
 RERANK_THRESHOLD = 0.0    # minimum cross-encoder score (0.0 = no filter)
-ENTAILMENT_THRESHOLD = 0.3  # minimum score to consider a citation verified
+ENTAILMENT_THRESHOLD = 0.5  # minimum entailment probability to consider a citation verified
 
 EMBED_PROVIDER = "ollama"   # "ollama" | "openai"
 OLLAMA_URL = "http://localhost:11434/api/embed"
@@ -27,3 +27,4 @@ GRAPH_TOP_K = 5            # related documents shown per note in graph view
 
 CHROMA_COLLECTION = "vault"
 CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+NLI_MODEL = "cross-encoder/nli-deberta-v3-small"
