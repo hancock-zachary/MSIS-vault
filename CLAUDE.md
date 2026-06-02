@@ -2,7 +2,7 @@
 
 ## How to answer study questions
 
-When the user asks a question about course material, you MUST:
+When the user asks any factual question, you MUST:
 
 1. Run the retrieval pipeline first:
    ```

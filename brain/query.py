@@ -20,15 +20,19 @@ def run_query(question: str) -> str:
     candidates = hybrid_retrieve(variants)
     print(f"[brain] {len(candidates)} candidates before reranking.", file=sys.stderr)
 
+    if not candidates:
+        return f"# Retrieved context for: {question}\n\n(no results found)\n"
+
     print(f"[brain] Reranking...", file=sys.stderr)
     top_chunks = rerank_chunks(question, candidates, top_k=TOP_K_RERANK)
+    print(f"[brain] {len(top_chunks)} chunks after reranking.", file=sys.stderr)
 
     lines = [f"# Retrieved context for: {question}\n"]
     for i, chunk in enumerate(top_chunks, 1):
         lines.append(
             f"## [{i}] {chunk.get('filename', 'unknown')}, page {chunk.get('page', '?')} "
             f"(course: {chunk.get('course', '?')})\n"
-            f"{chunk['text']}\n"
+            f"{chunk.get('text', '')}\n"
         )
     return "\n".join(lines)
 
