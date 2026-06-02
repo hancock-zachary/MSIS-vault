@@ -1,13 +1,21 @@
 import pickle
+from functools import lru_cache
 from pathlib import Path
 import chromadb
 from rank_bm25 import BM25Okapi
 from brain.config import CHROMA_DIR, CHROMA_COLLECTION
 
 
+@lru_cache(maxsize=1)
+def _get_client():
+    return chromadb.PersistentClient(path=str(CHROMA_DIR))
+
+
 def get_collection():
-    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    return client.get_or_create_collection(CHROMA_COLLECTION)
+    return _get_client().get_or_create_collection(
+        CHROMA_COLLECTION,
+        metadata={"hnsw:space": "cosine"},
+    )
 
 
 def upsert_chunks(collection, chunks: list[dict], embeddings: list[list[float]]):
@@ -41,6 +49,7 @@ def build_bm25(chunks: list[dict], bm25_path: Path):
 
 
 def load_bm25(bm25_path: Path):
+    # bm25.pkl is written by this codebase only — trust boundary is local filesystem
     with open(bm25_path, "rb") as f:
         return pickle.load(f)  # (index, tokenized_corpus, chunks)
 
