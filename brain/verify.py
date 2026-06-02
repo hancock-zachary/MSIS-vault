@@ -1,5 +1,7 @@
 import re
+from collections import defaultdict
 from dataclasses import dataclass
+import numpy as np
 from brain.config import ENTAILMENT_THRESHOLD
 from brain.rerank import _get_model
 
@@ -61,7 +63,11 @@ def verify_claims(claims: list[VerifiedClaim], chunks: list[dict]) -> list[Verif
     Returns:
         List of VerifiedClaim objects with updated verified status and chunk_text.
     """
-    chunk_map = {(c.get("filename", ""), c.get("page", 0)): c["text"] for c in chunks}
+    page_texts: dict[tuple, list[str]] = defaultdict(list)
+    for c in chunks:
+        key = (c.get("filename", ""), c.get("page", 0))
+        page_texts[key].append(c["text"])
+    chunk_map = {k: " ".join(v) for k, v in page_texts.items()}
     model = _get_model()
     for claim in claims:
         if claim.filename is None:
@@ -71,7 +77,8 @@ def verify_claims(claims: list[VerifiedClaim], chunks: list[dict]) -> list[Verif
             claim.verified = False
             continue
         claim.chunk_text = chunk_text
-        score = float(model.predict([(claim.claim_text, chunk_text)]))
+        raw = model.predict([(claim.claim_text, chunk_text)])
+        score = float(np.atleast_1d(raw)[0])
         claim.verified = score >= ENTAILMENT_THRESHOLD
     return claims
 
@@ -99,5 +106,5 @@ def format_verified_response(claims: list[VerifiedClaim]) -> str:
             lines.append(f"{claim.claim_text} [source: {claim.filename}, page {claim.page}]")
         else:
             lines.append(f"{claim.claim_text} [source: {claim.filename}, page {claim.page}] ⚠ unverified")
-    lines.append(f"\nGrounding: {verified_count}/{len(claims)} claims verified")
+    lines.append(f"Grounding: {verified_count}/{len(claims)} claims verified")
     return "\n".join(lines)
