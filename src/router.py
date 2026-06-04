@@ -117,6 +117,45 @@ def _extract_stub(page: dict) -> dict | None:
     }
 
 
+def route_and_chunk(profile: ChunkingProfile, pages: list[dict], embed_fn) -> list[dict]:
+    """Route pages to the appropriate chunking strategy and run salvage pass.
+
+    Returns all chunks (main strategy + salvage stubs). Every chunk has
+    'strategy' and 'is_stub' metadata fields.
+    """
+    from src.chunk import chunk_slides, chunk_page, chunk_semantic, chunk_structured
+
+    chunks = []
+
+    if profile.strategy == "slides":
+        chunks = chunk_slides(pages)
+        for c in chunks:
+            c.setdefault("strategy", "slides")
+            c.setdefault("is_stub", False)
+
+    elif profile.strategy == "structured":
+        chunks = chunk_structured(pages)
+
+    elif profile.strategy == "semantic":
+        for page in pages:
+            page_chunks = chunk_semantic(page, embed_fn=embed_fn)
+            chunks.extend(page_chunks)
+
+    else:
+        # "window" fallback
+        for page in pages:
+            page_chunks = chunk_page(page)
+            for c in page_chunks:
+                c.setdefault("strategy", "window")
+                c.setdefault("is_stub", False)
+            chunks.extend(page_chunks)
+
+    stubs = salvage_pass(pages, profile)
+    chunks.extend(stubs)
+
+    return chunks
+
+
 def salvage_pass(pages: list[dict], profile: ChunkingProfile) -> list[dict]:
     """Create stub chunks from garbled pages that have extractable titles.
 

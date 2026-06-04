@@ -415,14 +415,20 @@ def chunk_structured(pages: list[dict]) -> list[dict]:
 
 
 def build_chunks_from_file(path: Path, course: str) -> list[dict]:
-    """Extract and chunk any supported file type."""
+    """Extract and chunk any supported file type using the signal-based router.
+
+    Returns chunks with 'strategy' and 'is_stub' metadata fields on every chunk.
+    Stub chunks (is_stub=True) are salvaged title text from garbled image pages.
+    """
+    from src.router import build_profile, route_and_chunk
+    from src.embed import embed_batch
+
     pages = extract_pages(path, course)
     if not pages:
         return []
     pages = _strip_boilerplate(pages)
-    if is_slide_deck(pages):
-        return chunk_slides(pages)
-    chunks = []
-    for page in pages:
-        chunks.extend(chunk_page(page))
-    return chunks
+    if not pages:
+        return []
+
+    profile = build_profile(path, pages)
+    return route_and_chunk(profile, pages, embed_fn=embed_batch)

@@ -143,6 +143,7 @@ def test_build_chunks_from_file_pdf(sample_pdf):
     chunks = build_chunks_from_file(sample_pdf, course="IS 6410")
     assert len(chunks) >= 1
     assert all("id" in c and "text" in c and "page" in c for c in chunks)
+    assert all("strategy" in c and "is_stub" in c for c in chunks)
 
 
 def test_build_chunks_from_file_txt(tmp_path):
@@ -151,6 +152,7 @@ def test_build_chunks_from_file_txt(tmp_path):
     chunks = build_chunks_from_file(txt_file, course="IS 6410")
     assert len(chunks) >= 1
     assert all("id" in c and "text" in c for c in chunks)
+    assert all("strategy" in c and "is_stub" in c for c in chunks)
 
 
 def test_build_chunks_from_file_md(tmp_path):
@@ -158,6 +160,7 @@ def test_build_chunks_from_file_md(tmp_path):
     md_file.write_text("# Topic\n\n" + ("word " * 50), encoding="utf-8")
     chunks = build_chunks_from_file(md_file, course="IS 6410")
     assert len(chunks) >= 1
+    assert all("strategy" in c and "is_stub" in c for c in chunks)
 
 
 # ---------------------------------------------------------------------------

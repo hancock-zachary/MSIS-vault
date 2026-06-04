@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
-from src.router import ChunkingProfile, build_profile, salvage_pass
+from unittest.mock import patch
+from src.router import ChunkingProfile, build_profile, salvage_pass, route_and_chunk
 
 
 def _make_pages(n: int, tokens_per_page: int, course="IS 6410", filename="test.pdf") -> list[dict]:
@@ -124,3 +125,65 @@ def test_salvage_pass_rejects_garbled_title():
     profile = _garbled_profile(ratio=1.0)
     stubs = salvage_pass([fully_garbled], profile)
     assert stubs == []
+
+
+# ---------------------------------------------------------------------------
+# route_and_chunk tests
+# ---------------------------------------------------------------------------
+
+def mock_embed(texts):
+    return [[0.1] * 768 for _ in texts]
+
+
+def test_route_and_chunk_slides_strategy():
+    profile = ChunkingProfile(
+        strategy="slides", avg_tokens_per_page=40.0, has_structure=False,
+        garbled_page_ratio=0.0, file_extension=".pdf", page_count=8,
+    )
+    pages = [_make_pages(1, 30)[0] for _ in range(8)]
+    for i, p in enumerate(pages):
+        p["page"] = i + 1
+    chunks = route_and_chunk(profile, pages, embed_fn=mock_embed)
+    assert len(chunks) >= 1
+    assert all(c["strategy"] == "slides" for c in chunks)
+    assert all(c["is_stub"] is False for c in chunks)
+
+
+def test_route_and_chunk_semantic_strategy():
+    profile = ChunkingProfile(
+        strategy="semantic", avg_tokens_per_page=300.0, has_structure=False,
+        garbled_page_ratio=0.0, file_extension=".pdf", page_count=2,
+    )
+    pages = _make_pages(2, 300)
+    chunks = route_and_chunk(profile, pages, embed_fn=mock_embed)
+    assert len(chunks) >= 1
+    assert all(c["strategy"] == "semantic" for c in chunks)
+
+
+def test_route_and_chunk_structured_strategy():
+    profile = ChunkingProfile(
+        strategy="structured", avg_tokens_per_page=200.0, has_structure=True,
+        garbled_page_ratio=0.0, file_extension=".md", page_count=1,
+    )
+    pages = [{"course": "IS 6410", "filename": "notes.md", "page": 1,
+              "slide_title": "", "text": "# Topic A\n\nSome content here about topic A.\n\n# Topic B\n\nContent about topic B."}]
+    chunks = route_and_chunk(profile, pages, embed_fn=mock_embed)
+    assert len(chunks) >= 1
+    assert all(c["strategy"] == "structured" for c in chunks)
+
+
+def test_route_and_chunk_includes_salvage_stubs():
+    profile = ChunkingProfile(
+        strategy="slides", avg_tokens_per_page=40.0, has_structure=False,
+        garbled_page_ratio=0.5, file_extension=".pdf", page_count=2,
+    )
+    good_page = _make_pages(1, 40)[0]
+    garbled_page = {
+        "course": "IS 6410", "filename": "test.pdf", "page": 2,
+        "slide_title": "Project Portfolio Management",
+        "text": "Project Portfolio Management\nE 8 c I xa S e U n fl o ij ri O CM COrAPLICATED OOES WHAT single chars here",
+    }
+    chunks = route_and_chunk(profile, [good_page, garbled_page], embed_fn=mock_embed)
+    stubs = [c for c in chunks if c.get("is_stub")]
+    assert len(stubs) == 1
+    assert "Project Portfolio Management" in stubs[0]["text"]
