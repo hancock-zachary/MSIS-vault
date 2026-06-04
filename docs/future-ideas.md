@@ -7,7 +7,7 @@ A running list of features and extensions to build later.
 ## Query Access
 
 ### Local API Server
-Wrap `brain/query.py` in a FastAPI server so the second brain can be queried from anywhere — Claude.ai, Cowork, a browser, or a mobile app. Would enable the full RAG pipeline (rewrite → retrieve → rerank → verify) outside of Claude Code CLI.
+Wrap `src/query.py` in a FastAPI server so the second brain can be queried from anywhere — Claude.ai, Cowork, a browser, or a mobile app. Would enable the full RAG pipeline (rewrite → retrieve → rerank → verify) outside of Claude Code CLI.
 
 ---
 
@@ -17,7 +17,7 @@ Wrap `brain/query.py` in a FastAPI server so the second brain can be queried fro
 A native Obsidian sidebar plugin that lets you ask questions and see cited answers without leaving the app. Would call the local API server above.
 
 ### Automatic Ingestion on File Save
-Watch the `courses/` folder and automatically re-index new PDFs when they're added, instead of manually running `brain/ingest.py`.
+Watch the `courses/` folder and automatically re-index new PDFs when they're added, instead of manually running `src/ingest.py`.
 
 ---
 

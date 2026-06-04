@@ -21,7 +21,7 @@ dev = [
 pythonpath = ["."]
 
 [tool.hatch.build.targets.wheel]
-packages = ["brain"]
+packages = ["src"]
 
 [build-system]
 requires = ["hatchling"]

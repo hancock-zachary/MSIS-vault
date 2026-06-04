@@ -4,16 +4,16 @@
 
 **Goal:** Replace the single-strategy chunking pipeline with a signal-based router that selects the optimal strategy per document, attaches `ChunkingProfile` metadata to every chunk, and salvages title text from garbled image pages as flagged stub chunks.
 
-**Architecture:** A new `brain/router.py` owns `ChunkingProfile`, signal detection, routing logic, and the salvage pass. `brain/chunk.py` gains `chunk_semantic` and `chunk_structured` strategies and loses routing responsibility. `build_chunks_from_file` integrates the router internally so `ingest.py` changes are minimal.
+**Architecture:** A new `src/router.py` owns `ChunkingProfile`, signal detection, routing logic, and the salvage pass. `src/chunk.py` gains `chunk_semantic` and `chunk_structured` strategies and loses routing responsibility. `build_chunks_from_file` integrates the router internally so `ingest.py` changes are minimal.
 
-**Tech Stack:** Python 3.11+, numpy (already in env), tiktoken, pymupdf, python-docx, sentence-transformers (embed via brain.embed)
+**Tech Stack:** Python 3.11+, numpy (already in env), tiktoken, pymupdf, python-docx, sentence-transformers (embed via src.embed)
 
 ---
 
 ## File Structure
 
 ```
-brain/
+src/
   router.py              ← NEW: ChunkingProfile, build_profile, route_and_chunk, salvage_pass
   chunk.py               ← MODIFIED: add chunk_semantic, chunk_structured, is_quality_text; refactor build_chunks_from_file
   ingest.py              ← MODIFIED: import is_quality_text from chunk, update quality filter to pass stubs
@@ -29,11 +29,11 @@ brain/
 ## Task 1: Config constants
 
 **Files:**
-- Modify: `brain/config.py`
+- Modify: `src/config.py`
 
 - [ ] **Step 1: Add constants**
 
-Open `brain/config.py` and add after `CHUNK_OVERLAP_TOKENS`:
+Open `src/config.py` and add after `CHUNK_OVERLAP_TOKENS`:
 
 ```python
 SEMANTIC_SPLIT_THRESHOLD = 0.4  # cosine similarity drop below this triggers a semantic split
@@ -42,13 +42,13 @@ MIN_STUB_TOKENS = 3              # minimum meaningful words for a garbled-page t
 
 - [ ] **Step 2: Verify import works**
 
-Run: `python -c "from brain.config import SEMANTIC_SPLIT_THRESHOLD, MIN_STUB_TOKENS; print(SEMANTIC_SPLIT_THRESHOLD, MIN_STUB_TOKENS)"`
+Run: `python -c "from src.config import SEMANTIC_SPLIT_THRESHOLD, MIN_STUB_TOKENS; print(SEMANTIC_SPLIT_THRESHOLD, MIN_STUB_TOKENS)"`
 Expected: `0.4 3`
 
 - [ ] **Step 3: Commit**
 
 ```
-git add brain/config.py
+git add src/config.py
 git commit -m "feat: add SEMANTIC_SPLIT_THRESHOLD and MIN_STUB_TOKENS to config"
 ```
 
@@ -59,17 +59,17 @@ git commit -m "feat: add SEMANTIC_SPLIT_THRESHOLD and MIN_STUB_TOKENS to config"
 The `_is_quality_chunk` function currently lives in `ingest.py` but is needed by `router.py` too. Move it to `chunk.py` as `is_quality_text` so both modules can import it cleanly.
 
 **Files:**
-- Modify: `brain/chunk.py`
-- Modify: `brain/ingest.py`
-- Modify: `brain/tests/test_ingest.py`
-- Modify: `brain/tests/test_chunk.py`
+- Modify: `src/chunk.py`
+- Modify: `src/ingest.py`
+- Modify: `src/tests/test_ingest.py`
+- Modify: `src/tests/test_chunk.py`
 
 - [ ] **Step 1: Write failing test in test_chunk.py**
 
-Add to `brain/tests/test_chunk.py`:
+Add to `src/tests/test_chunk.py`:
 
 ```python
-from brain.chunk import is_quality_text
+from src.chunk import is_quality_text
 
 def test_is_quality_text_accepts_normal_text():
     text = "The five Scrum events are Sprint Planning, Daily Scrum, Sprint Review, Sprint Retrospective, and the Sprint itself."
@@ -85,12 +85,12 @@ def test_is_quality_text_rejects_too_short():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `uv run pytest brain/tests/test_chunk.py::test_is_quality_text_accepts_normal_text -v`
+Run: `uv run pytest src/tests/test_chunk.py::test_is_quality_text_accepts_normal_text -v`
 Expected: FAIL — `ImportError: cannot import name 'is_quality_text'`
 
 - [ ] **Step 3: Add is_quality_text to chunk.py**
 
-Add at the top of `brain/chunk.py` (after existing imports):
+Add at the top of `src/chunk.py` (after existing imports):
 
 ```python
 import re
@@ -119,28 +119,28 @@ def is_quality_text(text: str) -> bool:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `uv run pytest brain/tests/test_chunk.py::test_is_quality_text_accepts_normal_text brain/tests/test_chunk.py::test_is_quality_text_rejects_garbled brain/tests/test_chunk.py::test_is_quality_text_rejects_too_short -v`
+Run: `uv run pytest src/tests/test_chunk.py::test_is_quality_text_accepts_normal_text src/tests/test_chunk.py::test_is_quality_text_rejects_garbled src/tests/test_chunk.py::test_is_quality_text_rejects_too_short -v`
 Expected: All 3 PASS
 
 - [ ] **Step 5: Update ingest.py to import from chunk**
 
-In `brain/ingest.py`:
+In `src/ingest.py`:
 
 Change:
 ```python
 import json
 import re
 from pathlib import Path
-from brain.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
-from brain.chunk import build_chunks_from_file
+from src.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
+from src.chunk import build_chunks_from_file
 ```
 
 To:
 ```python
 import json
 from pathlib import Path
-from brain.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
-from brain.chunk import build_chunks_from_file, is_quality_text
+from src.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
+from src.chunk import build_chunks_from_file, is_quality_text
 ```
 
 Remove the entire `_is_quality_chunk` function from `ingest.py` (lines 21–37).
@@ -157,12 +157,12 @@ Note: `c.get("is_stub")` ensures stub chunks are never filtered out by the quali
 
 - [ ] **Step 6: Update test_ingest.py**
 
-In `brain/tests/test_ingest.py`, change the import line:
+In `src/tests/test_ingest.py`, change the import line:
 
 ```python
-from brain.ingest import find_unindexed_files, log_indexed, load_log, _course_from_path
-from brain.config import RAW_DIR
-from brain.chunk import is_quality_text
+from src.ingest import find_unindexed_files, log_indexed, load_log, _course_from_path
+from src.config import RAW_DIR
+from src.chunk import is_quality_text
 ```
 
 Remove the three `_is_quality_chunk` tests (they now live in `test_chunk.py`) and replace with:
@@ -175,13 +175,13 @@ def test_is_quality_text_imported_correctly():
 
 - [ ] **Step 7: Run full suite**
 
-Run: `uv run pytest brain/tests/ -v`
+Run: `uv run pytest src/tests/ -v`
 Expected: All tests pass
 
 - [ ] **Step 8: Commit**
 
 ```
-git add brain/chunk.py brain/ingest.py brain/tests/test_chunk.py brain/tests/test_ingest.py
+git add src/chunk.py src/ingest.py src/tests/test_chunk.py src/tests/test_ingest.py
 git commit -m "refactor: move is_quality_text to chunk.py, stubs bypass quality filter"
 ```
 
@@ -190,17 +190,17 @@ git commit -m "refactor: move is_quality_text to chunk.py, stubs bypass quality 
 ## Task 3: ChunkingProfile and signal detection
 
 **Files:**
-- Create: `brain/router.py`
-- Create: `brain/tests/test_router.py`
+- Create: `src/router.py`
+- Create: `src/tests/test_router.py`
 
 - [ ] **Step 1: Write failing tests**
 
-Create `brain/tests/test_router.py`:
+Create `src/tests/test_router.py`:
 
 ```python
 import pytest
 from pathlib import Path
-from brain.router import ChunkingProfile, build_profile
+from src.router import ChunkingProfile, build_profile
 
 
 def _make_pages(n: int, tokens_per_page: int, course="IS 6410", filename="test.pdf") -> list[dict]:
@@ -274,12 +274,12 @@ def test_build_profile_computes_garbled_ratio(tmp_path):
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `uv run pytest brain/tests/test_router.py -v`
-Expected: FAIL — `ModuleNotFoundError: No module named 'brain.router'`
+Run: `uv run pytest src/tests/test_router.py -v`
+Expected: FAIL — `ModuleNotFoundError: No module named 'src.router'`
 
-- [ ] **Step 3: Implement brain/router.py (profile and signal detection only)**
+- [ ] **Step 3: Implement src/router.py (profile and signal detection only)**
 
-Create `brain/router.py`:
+Create `src/router.py`:
 
 ```python
 """
@@ -295,8 +295,8 @@ from pathlib import Path
 
 import tiktoken
 
-from brain.chunk import is_quality_text
-from brain.config import (
+from src.chunk import is_quality_text
+from src.config import (
     SLIDE_PAGE_TOKEN_THRESHOLD,
 )
 
@@ -373,18 +373,18 @@ def build_profile(path: Path, pages: list[dict]) -> ChunkingProfile:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `uv run pytest brain/tests/test_router.py -v`
+Run: `uv run pytest src/tests/test_router.py -v`
 Expected: All 6 tests PASS
 
 - [ ] **Step 5: Run full suite**
 
-Run: `uv run pytest brain/tests/ -v`
+Run: `uv run pytest src/tests/ -v`
 Expected: All tests pass
 
 - [ ] **Step 6: Commit**
 
 ```
-git add brain/router.py brain/tests/test_router.py
+git add src/router.py src/tests/test_router.py
 git commit -m "feat: ChunkingProfile dataclass and signal-based routing in router.py"
 ```
 
@@ -393,17 +393,17 @@ git commit -m "feat: ChunkingProfile dataclass and signal-based routing in route
 ## Task 4: chunk_semantic
 
 **Files:**
-- Modify: `brain/chunk.py`
-- Modify: `brain/tests/test_chunk.py`
+- Modify: `src/chunk.py`
+- Modify: `src/tests/test_chunk.py`
 
 - [ ] **Step 1: Write failing tests**
 
-Add to `brain/tests/test_chunk.py`:
+Add to `src/tests/test_chunk.py`:
 
 ```python
 from unittest.mock import patch
 import numpy as np
-from brain.chunk import chunk_semantic
+from src.chunk import chunk_semantic
 
 def _make_dense_page(text: str) -> dict:
     return {"course": "IS 6410", "filename": "reading.pdf", "page": 3,
@@ -458,12 +458,12 @@ def test_chunk_semantic_splits_on_low_similarity():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `uv run pytest brain/tests/test_chunk.py::test_chunk_semantic_returns_chunks_with_strategy -v`
+Run: `uv run pytest src/tests/test_chunk.py::test_chunk_semantic_returns_chunks_with_strategy -v`
 Expected: FAIL — `ImportError: cannot import name 'chunk_semantic'`
 
 - [ ] **Step 3: Implement chunk_semantic in chunk.py**
 
-Add these functions to `brain/chunk.py` before `build_chunks_from_file`:
+Add these functions to `src/chunk.py` before `build_chunks_from_file`:
 
 ```python
 import numpy as np
@@ -494,7 +494,7 @@ def chunk_semantic(page: dict, embed_fn) -> list[dict]:
         page: page dict with text, course, filename, page, slide_title fields.
         embed_fn: callable(list[str]) -> list[list[float]], the embedding provider.
     """
-    from brain.config import SEMANTIC_SPLIT_THRESHOLD, CHUNK_SIZE_TOKENS
+    from src.config import SEMANTIC_SPLIT_THRESHOLD, CHUNK_SIZE_TOKENS
 
     sentences = _split_sentences(page["text"])
     if len(sentences) <= 1:
@@ -566,18 +566,18 @@ def chunk_semantic(page: dict, embed_fn) -> list[dict]:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `uv run pytest brain/tests/test_chunk.py::test_chunk_semantic_returns_chunks_with_strategy brain/tests/test_chunk.py::test_chunk_semantic_falls_back_to_window_when_single_sentence brain/tests/test_chunk.py::test_chunk_semantic_splits_on_low_similarity -v`
+Run: `uv run pytest src/tests/test_chunk.py::test_chunk_semantic_returns_chunks_with_strategy src/tests/test_chunk.py::test_chunk_semantic_falls_back_to_window_when_single_sentence src/tests/test_chunk.py::test_chunk_semantic_splits_on_low_similarity -v`
 Expected: All 3 PASS
 
 - [ ] **Step 5: Run full suite**
 
-Run: `uv run pytest brain/tests/ -v`
+Run: `uv run pytest src/tests/ -v`
 Expected: All tests pass
 
 - [ ] **Step 6: Commit**
 
 ```
-git add brain/chunk.py brain/tests/test_chunk.py
+git add src/chunk.py src/tests/test_chunk.py
 git commit -m "feat: add chunk_semantic with sentence-level cosine splitting"
 ```
 
@@ -586,15 +586,15 @@ git commit -m "feat: add chunk_semantic with sentence-level cosine splitting"
 ## Task 5: chunk_structured + update DOCX extraction
 
 **Files:**
-- Modify: `brain/chunk.py`
-- Modify: `brain/tests/test_chunk.py`
+- Modify: `src/chunk.py`
+- Modify: `src/tests/test_chunk.py`
 
 - [ ] **Step 1: Write failing tests**
 
-Add to `brain/tests/test_chunk.py`:
+Add to `src/tests/test_chunk.py`:
 
 ```python
-from brain.chunk import chunk_structured
+from src.chunk import chunk_structured
 
 def test_chunk_structured_splits_md_on_headings():
     page = {
@@ -631,12 +631,12 @@ def test_chunk_structured_sets_slide_title_from_heading():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `uv run pytest brain/tests/test_chunk.py::test_chunk_structured_splits_md_on_headings -v`
+Run: `uv run pytest src/tests/test_chunk.py::test_chunk_structured_splits_md_on_headings -v`
 Expected: FAIL — `ImportError: cannot import name 'chunk_structured'`
 
 - [ ] **Step 3: Implement chunk_structured in chunk.py**
 
-Add to `brain/chunk.py` after `chunk_semantic`:
+Add to `src/chunk.py` after `chunk_semantic`:
 
 ```python
 def chunk_structured(pages: list[dict]) -> list[dict]:
@@ -719,7 +719,7 @@ def chunk_structured(pages: list[dict]) -> list[dict]:
 
 - [ ] **Step 4: Update _extract_pages_docx to return sections**
 
-In `brain/chunk.py`, replace `_extract_pages_docx` with:
+In `src/chunk.py`, replace `_extract_pages_docx` with:
 
 ```python
 def _extract_pages_docx(path: Path, course: str) -> list[dict]:
@@ -778,18 +778,18 @@ def _extract_pages_docx(path: Path, course: str) -> list[dict]:
 
 - [ ] **Step 5: Run tests to confirm they pass**
 
-Run: `uv run pytest brain/tests/test_chunk.py::test_chunk_structured_splits_md_on_headings brain/tests/test_chunk.py::test_chunk_structured_no_headings_returns_window_chunks brain/tests/test_chunk.py::test_chunk_structured_sets_slide_title_from_heading -v`
+Run: `uv run pytest src/tests/test_chunk.py::test_chunk_structured_splits_md_on_headings src/tests/test_chunk.py::test_chunk_structured_no_headings_returns_window_chunks src/tests/test_chunk.py::test_chunk_structured_sets_slide_title_from_heading -v`
 Expected: All 3 PASS
 
 - [ ] **Step 6: Run full suite**
 
-Run: `uv run pytest brain/tests/ -v`
+Run: `uv run pytest src/tests/ -v`
 Expected: All tests pass
 
 - [ ] **Step 7: Commit**
 
 ```
-git add brain/chunk.py brain/tests/test_chunk.py
+git add src/chunk.py src/tests/test_chunk.py
 git commit -m "feat: chunk_structured for MD/DOCX/outlined PDF, section-aware DOCX extraction"
 ```
 
@@ -798,15 +798,15 @@ git commit -m "feat: chunk_structured for MD/DOCX/outlined PDF, section-aware DO
 ## Task 6: Salvage pass
 
 **Files:**
-- Modify: `brain/router.py`
-- Modify: `brain/tests/test_router.py`
+- Modify: `src/router.py`
+- Modify: `src/tests/test_router.py`
 
 - [ ] **Step 1: Write failing tests**
 
-Add to `brain/tests/test_router.py`:
+Add to `src/tests/test_router.py`:
 
 ```python
-from brain.router import salvage_pass, ChunkingProfile
+from src.router import salvage_pass, ChunkingProfile
 
 
 def _garbled_profile(ratio: float = 0.5) -> ChunkingProfile:
@@ -865,15 +865,15 @@ def test_salvage_pass_rejects_garbled_title():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `uv run pytest brain/tests/test_router.py::test_salvage_pass_creates_stub_from_title -v`
+Run: `uv run pytest src/tests/test_router.py::test_salvage_pass_creates_stub_from_title -v`
 Expected: FAIL — `ImportError: cannot import name 'salvage_pass'`
 
 - [ ] **Step 3: Implement salvage_pass in router.py**
 
-Add to `brain/router.py` after `build_profile`:
+Add to `src/router.py` after `build_profile`:
 
 ```python
-from brain.config import MIN_STUB_TOKENS
+from src.config import MIN_STUB_TOKENS
 
 
 def _extract_stub(page: dict) -> dict | None:
@@ -934,18 +934,18 @@ def salvage_pass(pages: list[dict], profile: ChunkingProfile) -> list[dict]:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `uv run pytest brain/tests/test_router.py -v`
+Run: `uv run pytest src/tests/test_router.py -v`
 Expected: All tests PASS
 
 - [ ] **Step 5: Run full suite**
 
-Run: `uv run pytest brain/tests/ -v`
+Run: `uv run pytest src/tests/ -v`
 Expected: All tests pass
 
 - [ ] **Step 6: Commit**
 
 ```
-git add brain/router.py brain/tests/test_router.py
+git add src/router.py src/tests/test_router.py
 git commit -m "feat: salvage_pass creates stub chunks from garbled page titles"
 ```
 
@@ -954,18 +954,18 @@ git commit -m "feat: salvage_pass creates stub chunks from garbled page titles"
 ## Task 7: route_and_chunk + refactor build_chunks_from_file
 
 **Files:**
-- Modify: `brain/router.py`
-- Modify: `brain/chunk.py`
-- Modify: `brain/tests/test_router.py`
-- Modify: `brain/tests/test_chunk.py`
+- Modify: `src/router.py`
+- Modify: `src/chunk.py`
+- Modify: `src/tests/test_router.py`
+- Modify: `src/tests/test_chunk.py`
 
 - [ ] **Step 1: Write failing tests for route_and_chunk**
 
-Add to `brain/tests/test_router.py`:
+Add to `src/tests/test_router.py`:
 
 ```python
 from unittest.mock import patch
-from brain.router import route_and_chunk
+from src.router import route_and_chunk
 
 
 def mock_embed(texts):
@@ -1028,12 +1028,12 @@ def test_route_and_chunk_includes_salvage_stubs():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `uv run pytest brain/tests/test_router.py::test_route_and_chunk_slides_strategy -v`
+Run: `uv run pytest src/tests/test_router.py::test_route_and_chunk_slides_strategy -v`
 Expected: FAIL — `ImportError: cannot import name 'route_and_chunk'`
 
 - [ ] **Step 3: Implement route_and_chunk in router.py**
 
-Add to `brain/router.py`:
+Add to `src/router.py`:
 
 ```python
 def route_and_chunk(profile: ChunkingProfile, pages: list[dict], embed_fn) -> list[dict]:
@@ -1047,7 +1047,7 @@ def route_and_chunk(profile: ChunkingProfile, pages: list[dict], embed_fn) -> li
         pages: extracted page dicts from chunk.extract_pages.
         embed_fn: callable(list[str]) -> list[list[float]] for semantic chunking.
     """
-    from brain.chunk import chunk_slides, chunk_page, chunk_semantic, chunk_structured
+    from src.chunk import chunk_slides, chunk_page, chunk_semantic, chunk_structured
 
     chunks = []
 
@@ -1093,8 +1093,8 @@ def build_chunks_from_file(path: Path, course: str) -> list[dict]:
     Returns chunks with 'strategy' and 'is_stub' metadata fields on every chunk.
     Stub chunks (is_stub=True) are salvaged title text from garbled image pages.
     """
-    from brain.router import build_profile, route_and_chunk
-    from brain.embed import embed_batch
+    from src.router import build_profile, route_and_chunk
+    from src.embed import embed_batch
 
     pages = extract_pages(path, course)
     if not pages:
@@ -1133,18 +1133,18 @@ def test_build_chunks_from_file_md(tmp_path):
 
 - [ ] **Step 6: Run all router tests**
 
-Run: `uv run pytest brain/tests/test_router.py -v`
+Run: `uv run pytest src/tests/test_router.py -v`
 Expected: All tests PASS
 
 - [ ] **Step 7: Run full suite**
 
-Run: `uv run pytest brain/tests/ -v`
+Run: `uv run pytest src/tests/ -v`
 Expected: All tests pass
 
 - [ ] **Step 8: Commit**
 
 ```
-git add brain/router.py brain/chunk.py brain/tests/test_router.py brain/tests/test_chunk.py
+git add src/router.py src/chunk.py src/tests/test_router.py src/tests/test_chunk.py
 git commit -m "feat: route_and_chunk integrates all strategies, refactor build_chunks_from_file"
 ```
 
@@ -1176,17 +1176,17 @@ git commit -m "docs: add stub chunk instruction to CLAUDE.md"
 
 - [ ] **Step 1: Run full test suite**
 
-Run: `uv run pytest brain/tests/ -v`
+Run: `uv run pytest src/tests/ -v`
 Expected: All tests pass
 
 - [ ] **Step 2: Verify ingest pipeline imports cleanly**
 
-Run: `python -c "from brain.ingest import run_ingestion; print('OK')"`
+Run: `python -c "from src.ingest import run_ingestion; print('OK')"`
 Expected: `OK`
 
 - [ ] **Step 3: Verify router imports cleanly**
 
-Run: `python -c "from brain.router import build_profile, route_and_chunk, salvage_pass, ChunkingProfile; print('OK')"`
+Run: `python -c "from src.router import build_profile, route_and_chunk, salvage_pass, ChunkingProfile; print('OK')"`
 Expected: `OK`
 
 - [ ] **Step 4: Push to GitHub**
@@ -1198,9 +1198,9 @@ git push origin master:main
 - [ ] **Step 5: After pushing, wipe and re-ingest**
 
 ```powershell
-Remove-Item -Recurse -Force brain\chroma, brain\bm25.pkl, brain\ingestion_log.json -ErrorAction SilentlyContinue
-uv run python brain/ingest.py
-uv run python brain/graph.py
+Remove-Item -Recurse -Force src\chroma, src\bm25.pkl, src\ingestion_log.json -ErrorAction SilentlyContinue
+uv run python src/ingest.py
+uv run python src/graph.py
 ```
 
 Expected: Ingest output now shows strategy per file (semantic/structured/slides) and reports salvaged stubs where applicable.

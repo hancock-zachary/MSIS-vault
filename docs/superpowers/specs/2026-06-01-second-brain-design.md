@@ -30,7 +30,7 @@ PDFs (courses/)
     ▼
 [Graph Generator]
     │  document-level embeddings → similarity → Obsidian wikilinks
-    └──▶ notes/ (one .md per PDF, [[wikilinks]] to top-5 related docs)
+    └──▶ wiki/ (one .md per PDF, [[wikilinks]] to top-5 related docs)
     
 Query
     │
@@ -71,7 +71,7 @@ Answer to user
 3. Chunk each page into overlapping 500-token windows (overlap: 50 tokens) using `tiktoken` for accurate token counting.
 4. Embed each chunk with `nomic-embed-text` via Ollama HTTP API (local, free).
 5. Upsert into ChromaDB with metadata: `{course, filename, page, slide_title, chunk_index}`.
-6. Rebuild BM25 index from all chunks and pickle to `brain/bm25.pkl`.
+6. Rebuild BM25 index from all chunks and pickle to `src/bm25.pkl`.
 
 **Chunk metadata schema:**
 ```json
@@ -148,13 +148,13 @@ Model: `cross-encoder/ms-marco-MiniLM-L-6-v2` (sentence-transformers, runs local
 ## 8. Claude Code Integration
 
 **`CLAUDE.md` instructions added to vault root:**
-- When answering study questions, invoke `brain/query.py "<question>"` first
+- When answering study questions, invoke `src/query.py "<question>"` first
 - Use returned chunks as the only factual basis for the answer
 - Follow citation and grounding constraints
 
-**`brain/query.py` CLI:**
+**`src/query.py` CLI:**
 ```
-python brain/query.py "What is the difference between OLTP and OLAP?"
+python src/query.py "What is the difference between OLTP and OLAP?"
 ```
 Returns formatted context block with top-K chunks and metadata, ready for Claude to consume.
 
@@ -172,8 +172,8 @@ Vault/
         additional_files/
       IS 6495/
         ...
-    notes/               ← generated Obsidian notes (one per PDF, with wikilinks)
-    brain/
+    wiki/               ← generated Obsidian notes (one per PDF, with wikilinks)
+    src/
       ingest.py          ← ingestion pipeline
       graph.py           ← Obsidian graph note generator
       query.py           ← query CLI
@@ -212,19 +212,19 @@ Vault/
 
 ## 11. Graph View Generation
 
-`brain/graph.py` generates one Obsidian markdown note per indexed PDF and populates it with `[[wikilinks]]` to the most semantically similar other documents. This makes Obsidian's graph view reflect genuine conceptual relationships across all courses.
+`src/graph.py` generates one Obsidian markdown note per indexed PDF and populates it with `[[wikilinks]]` to the most semantically similar other documents. This makes Obsidian's graph view reflect genuine conceptual relationships across all courses.
 
 **How it works:**
 1. For each PDF in `ingestion_log.json`, fetch all its chunk embeddings from ChromaDB
 2. Average them into a single document-level embedding
 3. Query ChromaDB for the top-50 most similar chunks from *other* files
 4. Deduplicate to unique filenames, take the top `GRAPH_TOP_K` (default: 5)
-5. Write a markdown note to `notes/<title>.md` with metadata and wikilinks
+5. Write a markdown note to `wiki/<title>.md` with metadata and wikilinks
 
 **Usage:**
 ```
-uv run python brain/ingest.py   # index PDFs first
-uv run python brain/graph.py   # then generate notes
+uv run python src/ingest.py   # index PDFs first
+uv run python src/graph.py   # then generate notes
 ```
 
 Re-running `graph.py` is safe — notes are overwritten with fresh similarity data each time.

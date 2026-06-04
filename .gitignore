@@ -1,9 +1,27 @@
 .env
-# raw/ and notes/ are intentionally tracked for sharing
-brain/chroma/
-brain/bm25.pkl
-brain/ingestion_log.json
-brain/__pycache__/
-brain/tests/__pycache__/
+src/chroma/
+src/bm25.pkl
+src/ingestion_log.json
+src/__pycache__/
+src/tests/__pycache__/
 *.pyc
 .worktrees/
+raw/IS 6410/
+raw/IS 6495/
+raw/IS 6640/
+raw/IS 6801/
+raw/IS 6410/
+raw/OSC 6660/
+raw/OSC 6680/
+
+wiki/IS 6410/
+wiki/IS 6495/
+wiki/IS 6640/
+wiki/IS 6801/
+wiki/IS 6410/
+wiki/OSC 6660/
+wiki/OSC 6680/
+
+docs/study-guides/
+wiki/index.md
+wiki/log.md

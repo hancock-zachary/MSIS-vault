@@ -1,22 +1,44 @@
 {
-  "collapse-filter": true,
-  "search": "",
+  "collapse-filter": false,
+  "search": "path:wiki  ",
   "showTags": false,
   "showAttachments": false,
-  "hideUnresolved": false,
+  "hideUnresolved": true,
   "showOrphans": true,
-  "collapse-color-groups": true,
-  "colorGroups": [],
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:\"wiki/IS 6410\"  ",
+      "color": {
+        "a": 1,
+        "rgb": 14889265
+      }
+    },
+    {
+      "query": "path:\"wiki/OSC 6660\"  ",
+      "color": {
+        "a": 1,
+        "rgb": 3525101
+      }
+    },
+    {
+      "query": "path:\"wiki/OSC 6680\"  ",
+      "color": {
+        "a": 1,
+        "rgb": 5526240
+      }
+    }
+  ],
   "collapse-display": true,
   "showArrow": false,
   "textFadeMultiplier": 0,
   "nodeSizeMultiplier": 1,
   "lineSizeMultiplier": 1,
-  "collapse-forces": true,
-  "centerStrength": 0.518713248970312,
-  "repelStrength": 10,
-  "linkStrength": 1,
-  "linkDistance": 250,
-  "scale": 1,
+  "collapse-forces": false,
+  "centerStrength": 0.302083333333333,
+  "repelStrength": 14.0625,
+  "linkStrength": 0.395833333333333,
+  "linkDistance": 400,
+  "scale": 0.1517888032021197,
   "close": true
 }

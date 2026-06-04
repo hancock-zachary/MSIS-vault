@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "e5a82f086033be35",
+        "id": "38b577a1d87671e0",
         "type": "tabs",
         "children": [
           {
-            "id": "e6eb8f98f14815ff",
+            "id": "37c54eb5e529aa9e",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "CLAUDE.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "CLAUDE"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -53,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "tag:OSC-6680",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -113,12 +109,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "CLAUDE.md",
+                "file": "wiki/IS 6410/IS 6410 Slides 01_01 - IT Projects are Challenging.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from CLAUDE"
+              "title": "Outgoing links from IS 6410 Slides 01_01 - IT Projects are Challenging"
             }
           },
           {
@@ -156,13 +152,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "CLAUDE.md",
+                "file": "wiki/IS 6410/IS 6410 Slides 01_01 - IT Projects are Challenging.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of CLAUDE"
+              "title": "Outline of IS 6410 Slides 01_01 - IT Projects are Challenging"
             }
           }
         ],
@@ -170,7 +166,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -183,26 +180,44 @@
       "bases:Create new base": false
     }
   },
-  "active": "e6eb8f98f14815ff",
+  "active": "37c54eb5e529aa9e",
   "lastOpenFiles": [
-    "Welcome.md",
-    "CLAUDE.md",
-    "courses/OSC 6680",
-    "courses/OSC 6660",
-    "courses/IS 6801",
-    "courses/IS 6640",
-    "courses/IS 6570",
-    "courses/IS 6495",
-    "courses/IS 6410/Slides/IS 6410 1_4 - Project Feasibility_pdf.pdf",
-    "courses/IS 6410/Slides/IS 6410 1_3 - Project Initiation_pdf.pdf",
-    "courses/IS 6410/Slides/IS 6410 1_2 - Intro to Sys Analysis and Design_pdf.pdf",
-    "courses/IS 6410/Slides/IS 6410 1_1 - IT projects are challenging_pdf.pdf",
-    "courses/IS 6410/Syllabus - Systems Analysis & Design.md",
-    "Untitled.canvas",
-    "docs/superpowers/specs/2026-06-01-second-brain-design.md",
-    "docs/superpowers/plans/2026-06-01-second-brain.md",
-    "create a link.md",
-    "2026-06-01.md",
-    "IS 6410/Syllabus - Systems Analysis & Design.md"
+    "src/tests/test_router.py.tmp.28616.c00526b830ff",
+    "src/chunk.py.tmp.28616.2c30add2ce0e",
+    "src/chunk.py.tmp.28616.3f33f43e796b",
+    "src/__pycache__/router.cpython-313.pyc",
+    "src/router.py",
+    "src/tests/__pycache__/test_router.cpython-313-pytest-9.0.3.pyc",
+    "src/tests/test_router.py",
+    "wiki/OSC 6660/OSC 5640 - Wilson - M2 Slides.md",
+    "src/tests/test_ingest.py.tmp.28616.095d4769d51a",
+    "wiki/OSC 6660/OSC 6660 Transcript 04_05 - Summary.md",
+    "wiki/IS 6410/IS 6410 Slides 01_01 - IT Projects are Challenging.md",
+    "src/chunk.py.tmp.41968.1fa33a1c6dbb",
+    "src/chunk.py.tmp.41968.3d4eb5cc7037",
+    "docs/study-guides/IS6410-quiz-module4.md",
+    "wiki/index.md",
+    "docs/study-guides/IS6410-quiz-module3.md",
+    "docs/study-guides/IS6410-quiz-module2.md",
+    "wiki/log.md",
+    "wiki/IS 6410/Requirements Elicitation Techniques.md",
+    "wiki/IS 6410/Notes on Use Case Diagram and Narratives.md",
+    "wiki/IS 6410/Essential Scrum Chapter 6 - Kenneth Rubin.md",
+    "wiki/IS 6410/Exam 1 Study Outline.md",
+    "src/bm25.pkl",
+    "docs/study-guides/IS6410-quiz-module1.md",
+    "wiki/OSC 6660/OSC 6660 Transcript 01_02 - Defining a Project.md",
+    "wiki/IS 6410/2017 Scrum Guide US.md",
+    "wiki/OSC 6680/Wanted Head of Human AI Solutions.md",
+    "wiki/OSC 6680/OSC 6680 Product Management Syllabus Spring 2026.md",
+    "wiki/OSC 6680/OSC 6680 - Module 9 - Chuck Sharp.md",
+    "wiki/OSC 6680/OSC 6680 - Module 8 - Chuck Sharp.md",
+    "wiki/OSC 6680/OSC 6680 - Module 7 - Chuck Sharp.md",
+    "wiki/OSC 6680/OSC 6680 - Module 6 - Chuck Sharp.md",
+    "wiki/OSC 6680/OSC 6680 - Module 5 - Chuck Sharp.md",
+    "wiki/OSC 6680/OSC 6680 - Module 4 - Chuck Sharp.md",
+    "wiki/OSC 6680/OSC 6680 - Module 3 - Chuck Sharp.md",
+    "wiki/OSC 6680/OSC 6680 - Module 2 - Chuck Sharp.md",
+    "Untitled.canvas"
   ]
 }

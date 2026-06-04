@@ -14,7 +14,7 @@
 
 ```
 Vault/University of Utah - MSIS/
-  brain/
+  src/
     config.py          — all paths, constants, tunable params (K, thresholds, chunk size)
     embed.py           — embedding provider abstraction (Ollama or OpenAI, one swap)
     chunk.py           — PDF extraction + overlapping token chunking
@@ -42,9 +42,9 @@ Vault/University of Utah - MSIS/
 ## Task 1: Project scaffold and config
 
 **Files:**
-- Create: `brain/config.py`
+- Create: `src/config.py`
 - Create: `requirements.txt`
-- Create: `brain/tests/conftest.py`
+- Create: `src/tests/conftest.py`
 
 - [ ] **Step 1: Create `requirements.txt`**
 
@@ -63,7 +63,7 @@ pytest>=8.0.0
 Run: `pip install -r requirements.txt`
 Expected: All packages install without error. Confirm with `pip show chromadb sentence-transformers`.
 
-- [ ] **Step 3: Create `brain/config.py`**
+- [ ] **Step 3: Create `src/config.py`**
 
 ```python
 from pathlib import Path
@@ -91,7 +91,7 @@ CHROMA_COLLECTION = "vault"
 CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 ```
 
-- [ ] **Step 4: Create `brain/tests/conftest.py`**
+- [ ] **Step 4: Create `src/tests/conftest.py`**
 
 ```python
 import pytest
@@ -134,7 +134,7 @@ Expected: Prints the vault path without error.
 - [ ] **Step 6: Commit**
 
 ```
-git add brain/config.py brain/tests/conftest.py requirements.txt
+git add src/config.py src/tests/conftest.py requirements.txt
 git commit -m "feat: scaffold brain project with config and test fixtures"
 ```
 
@@ -143,13 +143,13 @@ git commit -m "feat: scaffold brain project with config and test fixtures"
 ## Task 2: Embedding provider
 
 **Files:**
-- Create: `brain/embed.py`
-- Create: `brain/tests/test_embed.py`
+- Create: `src/embed.py`
+- Create: `src/tests/test_embed.py`
 
 - [ ] **Step 1: Write failing test**
 
 ```python
-# brain/tests/test_embed.py
+# src/tests/test_embed.py
 from unittest.mock import patch, MagicMock
 from brain.embed import embed_text, embed_batch
 
@@ -179,10 +179,10 @@ def test_embed_batch_returns_list_of_vectors():
 
 - [ ] **Step 2: Run test to confirm it fails**
 
-Run: `pytest brain/tests/test_embed.py -v`
+Run: `pytest src/tests/test_embed.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.embed'`
 
-- [ ] **Step 3: Implement `brain/embed.py`**
+- [ ] **Step 3: Implement `src/embed.py`**
 
 ```python
 import os
@@ -217,13 +217,13 @@ def _openai_embed(texts: list[str]) -> list[list[float]]:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `pytest brain/tests/test_embed.py -v`
+Run: `pytest src/tests/test_embed.py -v`
 Expected: PASSED (both tests)
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/embed.py brain/tests/test_embed.py
+git add src/embed.py src/tests/test_embed.py
 git commit -m "feat: add embedding provider with Ollama/OpenAI swap"
 ```
 
@@ -232,13 +232,13 @@ git commit -m "feat: add embedding provider with Ollama/OpenAI swap"
 ## Task 3: PDF extraction and chunking
 
 **Files:**
-- Create: `brain/chunk.py`
-- Create: `brain/tests/test_chunk.py`
+- Create: `src/chunk.py`
+- Create: `src/tests/test_chunk.py`
 
 - [ ] **Step 1: Write failing tests**
 
 ```python
-# brain/tests/test_chunk.py
+# src/tests/test_chunk.py
 from brain.chunk import extract_pages, chunk_page, build_chunks_from_pdf
 
 def test_extract_pages_returns_page_dicts(sample_pdf):
@@ -283,10 +283,10 @@ def test_build_chunks_from_pdf(sample_pdf):
 
 - [ ] **Step 2: Run tests to confirm they fail**
 
-Run: `pytest brain/tests/test_chunk.py -v`
+Run: `pytest src/tests/test_chunk.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.chunk'`
 
-- [ ] **Step 3: Implement `brain/chunk.py`**
+- [ ] **Step 3: Implement `src/chunk.py`**
 
 ```python
 import re
@@ -359,13 +359,13 @@ def build_chunks_from_pdf(pdf_path: Path, course: str) -> list[dict]:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `pytest brain/tests/test_chunk.py -v`
+Run: `pytest src/tests/test_chunk.py -v`
 Expected: All 4 tests PASSED
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/chunk.py brain/tests/test_chunk.py
+git add src/chunk.py src/tests/test_chunk.py
 git commit -m "feat: PDF extraction and overlapping token chunking"
 ```
 
@@ -374,13 +374,13 @@ git commit -m "feat: PDF extraction and overlapping token chunking"
 ## Task 4: Dual index (ChromaDB + BM25)
 
 **Files:**
-- Create: `brain/index.py`
-- Create: `brain/tests/test_index.py`
+- Create: `src/index.py`
+- Create: `src/tests/test_index.py`
 
 - [ ] **Step 1: Write failing tests**
 
 ```python
-# brain/tests/test_index.py
+# src/tests/test_index.py
 import pytest
 from unittest.mock import patch, MagicMock
 from brain.index import (
@@ -421,10 +421,10 @@ def test_load_bm25_roundtrip(tmp_path, sample_chunks):
 
 - [ ] **Step 2: Run tests to confirm they fail**
 
-Run: `pytest brain/tests/test_index.py -v`
+Run: `pytest src/tests/test_index.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.index'`
 
-- [ ] **Step 3: Implement `brain/index.py`**
+- [ ] **Step 3: Implement `src/index.py`**
 
 ```python
 import pickle
@@ -483,13 +483,13 @@ def query_bm25(index, corpus, chunks: list[dict], query: str, top_k: int) -> lis
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `pytest brain/tests/test_index.py -v`
+Run: `pytest src/tests/test_index.py -v`
 Expected: All 3 tests PASSED
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/index.py brain/tests/test_index.py
+git add src/index.py src/tests/test_index.py
 git commit -m "feat: ChromaDB dense index and BM25 sparse index with upsert/query"
 ```
 
@@ -498,12 +498,12 @@ git commit -m "feat: ChromaDB dense index and BM25 sparse index with upsert/quer
 ## Task 5: Ingestion pipeline
 
 **Files:**
-- Create: `brain/ingest.py`
+- Create: `src/ingest.py`
 
 - [ ] **Step 1: Write a smoke test**
 
 ```python
-# brain/tests/test_ingest.py
+# src/tests/test_ingest.py
 import json
 from unittest.mock import patch, MagicMock
 from brain.ingest import find_unindexed_pdfs, log_indexed, load_log
@@ -533,10 +533,10 @@ def test_log_roundtrip(tmp_path):
 
 - [ ] **Step 2: Run to confirm it fails**
 
-Run: `pytest brain/tests/test_ingest.py -v`
+Run: `pytest src/tests/test_ingest.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.ingest'`
 
-- [ ] **Step 3: Implement `brain/ingest.py`**
+- [ ] **Step 3: Implement `src/ingest.py`**
 
 ```python
 import json
@@ -605,13 +605,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Run smoke tests**
 
-Run: `pytest brain/tests/test_ingest.py -v`
+Run: `pytest src/tests/test_ingest.py -v`
 Expected: All 3 tests PASSED
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/ingest.py brain/tests/test_ingest.py
+git add src/ingest.py src/tests/test_ingest.py
 git commit -m "feat: ingestion pipeline with incremental indexing and log tracking"
 ```
 
@@ -620,13 +620,13 @@ git commit -m "feat: ingestion pipeline with incremental indexing and log tracki
 ## Task 6: Agentic query rewriter
 
 **Files:**
-- Create: `brain/rewrite.py`
-- Create: `brain/tests/test_rewrite.py`
+- Create: `src/rewrite.py`
+- Create: `src/tests/test_rewrite.py`
 
 - [ ] **Step 1: Write failing test**
 
 ```python
-# brain/tests/test_rewrite.py
+# src/tests/test_rewrite.py
 from unittest.mock import patch
 from brain.rewrite import rewrite_query, parse_variants
 
@@ -655,10 +655,10 @@ def test_rewrite_query_returns_list_of_strings():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `pytest brain/tests/test_rewrite.py -v`
+Run: `pytest src/tests/test_rewrite.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.rewrite'`
 
-- [ ] **Step 3: Implement `brain/rewrite.py`**
+- [ ] **Step 3: Implement `src/rewrite.py`**
 
 ```python
 import re
@@ -709,13 +709,13 @@ def parse_variants(raw: str) -> list[str]:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `pytest brain/tests/test_rewrite.py -v`
+Run: `pytest src/tests/test_rewrite.py -v`
 Expected: All 3 tests PASSED
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/rewrite.py brain/tests/test_rewrite.py
+git add src/rewrite.py src/tests/test_rewrite.py
 git commit -m "feat: agentic query rewriter with Claude subprocess and HyDE"
 ```
 
@@ -724,13 +724,13 @@ git commit -m "feat: agentic query rewriter with Claude subprocess and HyDE"
 ## Task 7: Hybrid retrieval with RRF fusion
 
 **Files:**
-- Create: `brain/retrieve.py`
-- Create: `brain/tests/test_retrieve.py`
+- Create: `src/retrieve.py`
+- Create: `src/tests/test_retrieve.py`
 
 - [ ] **Step 1: Write failing tests**
 
 ```python
-# brain/tests/test_retrieve.py
+# src/tests/test_retrieve.py
 from brain.retrieve import reciprocal_rank_fusion, deduplicate_by_id
 
 def test_rrf_higher_ranked_gets_higher_score():
@@ -760,10 +760,10 @@ def test_deduplicate_keeps_first_occurrence():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `pytest brain/tests/test_retrieve.py -v`
+Run: `pytest src/tests/test_retrieve.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.retrieve'`
 
-- [ ] **Step 3: Implement `brain/retrieve.py`**
+- [ ] **Step 3: Implement `src/retrieve.py`**
 
 ```python
 from collections import defaultdict
@@ -816,13 +816,13 @@ def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL) -> 
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `pytest brain/tests/test_retrieve.py -v`
+Run: `pytest src/tests/test_retrieve.py -v`
 Expected: All 3 tests PASSED
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/retrieve.py brain/tests/test_retrieve.py
+git add src/retrieve.py src/tests/test_retrieve.py
 git commit -m "feat: hybrid retrieval with RRF fusion across query variants"
 ```
 
@@ -831,13 +831,13 @@ git commit -m "feat: hybrid retrieval with RRF fusion across query variants"
 ## Task 8: Cross-encoder reranker
 
 **Files:**
-- Create: `brain/rerank.py`
-- Create: `brain/tests/test_rerank.py`
+- Create: `src/rerank.py`
+- Create: `src/tests/test_rerank.py`
 
 - [ ] **Step 1: Write failing test**
 
 ```python
-# brain/tests/test_rerank.py
+# src/tests/test_rerank.py
 from unittest.mock import patch, MagicMock
 from brain.rerank import rerank_chunks
 
@@ -865,10 +865,10 @@ def test_rerank_orders_by_score(sample_chunks):
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `pytest brain/tests/test_rerank.py -v`
+Run: `pytest src/tests/test_rerank.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.rerank'`
 
-- [ ] **Step 3: Implement `brain/rerank.py`**
+- [ ] **Step 3: Implement `src/rerank.py`**
 
 ```python
 from functools import lru_cache
@@ -893,13 +893,13 @@ def rerank_chunks(query: str, chunks: list[dict], top_k: int = TOP_K_RERANK) -> 
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `pytest brain/tests/test_rerank.py -v`
+Run: `pytest src/tests/test_rerank.py -v`
 Expected: Both tests PASSED
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/rerank.py brain/tests/test_rerank.py
+git add src/rerank.py src/tests/test_rerank.py
 git commit -m "feat: cross-encoder reranker with cached model loading"
 ```
 
@@ -908,13 +908,13 @@ git commit -m "feat: cross-encoder reranker with cached model loading"
 ## Task 9: Citation verifier
 
 **Files:**
-- Create: `brain/verify.py`
-- Create: `brain/tests/test_verify.py`
+- Create: `src/verify.py`
+- Create: `src/tests/test_verify.py`
 
 - [ ] **Step 1: Write failing tests**
 
 ```python
-# brain/tests/test_verify.py
+# src/tests/test_verify.py
 from brain.verify import parse_citations, format_verified_response, VerifiedClaim
 
 def test_parse_citations_extracts_inline_sources():
@@ -946,10 +946,10 @@ def test_format_verified_response_shows_grounding_ratio():
 
 - [ ] **Step 2: Run to confirm failure**
 
-Run: `pytest brain/tests/test_verify.py -v`
+Run: `pytest src/tests/test_verify.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'brain.verify'`
 
-- [ ] **Step 3: Implement `brain/verify.py`**
+- [ ] **Step 3: Implement `src/verify.py`**
 
 ```python
 import re
@@ -1022,13 +1022,13 @@ def format_verified_response(claims: list[VerifiedClaim]) -> str:
 
 - [ ] **Step 4: Run tests to confirm they pass**
 
-Run: `pytest brain/tests/test_verify.py -v`
+Run: `pytest src/tests/test_verify.py -v`
 Expected: All 3 tests PASSED
 
 - [ ] **Step 5: Commit**
 
 ```
-git add brain/verify.py brain/tests/test_verify.py
+git add src/verify.py src/tests/test_verify.py
 git commit -m "feat: citation parser and entailment-based claim verifier"
 ```
 
@@ -1037,13 +1037,13 @@ git commit -m "feat: citation parser and entailment-based claim verifier"
 ## Task 10: Query CLI entry point
 
 **Files:**
-- Create: `brain/query.py`
+- Create: `src/query.py`
 
-- [ ] **Step 1: Implement `brain/query.py`**
+- [ ] **Step 1: Implement `src/query.py`**
 
 ```python
 """
-Usage: python brain/query.py "Your question here"
+Usage: python src/query.py "Your question here"
 
 Runs the full pipeline: rewrite → hybrid retrieve → rerank → format context.
 Output is a context block for Claude to consume. Does NOT call Claude itself.
@@ -1079,7 +1079,7 @@ def run_query(question: str) -> str:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python brain/query.py \"Your question\"")
+        print("Usage: python src/query.py \"Your question\"")
         sys.exit(1)
     question = " ".join(sys.argv[1:])
     print(run_query(question))
@@ -1087,13 +1087,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Smoke test with a dry run (no real index needed)**
 
-Run: `python brain/query.py "test" 2>&1 | head -5`
+Run: `python src/query.py "test" 2>&1 | head -5`
 Expected: Prints `[brain] Rewriting query...` before hitting any real index errors. (Full end-to-end requires Ollama running and slides ingested.)
 
 - [ ] **Step 3: Commit**
 
 ```
-git add brain/query.py
+git add src/query.py
 git commit -m "feat: query CLI entry point — rewrite → retrieve → rerank → format"
 ```
 
@@ -1115,7 +1115,7 @@ When the user asks a question about course material, you MUST:
 
 1. Run the retrieval pipeline first:
    ```
-   python brain/query.py "<user's question>"
+   python src/query.py "<user's question>"
    ```
 2. Use ONLY the returned context chunks as your factual basis.
 3. Tag every factual claim with an inline citation: `[source: filename, page N]`
@@ -1132,13 +1132,13 @@ When the user asks a question about course material, you MUST:
 
 When the user adds new PDFs to the vault:
 ```
-python brain/ingest.py
+python src/ingest.py
 ```
 
 ## Running tests
 
 ```
-pytest brain/tests/ -v
+pytest src/tests/ -v
 ```
 ```
 
@@ -1167,17 +1167,17 @@ Expected: Model downloads (274MB, one-time).
 
 - [ ] **Step 2: Ingest one course folder**
 
-Run: `python brain/ingest.py`
+Run: `python src/ingest.py`
 Expected: Prints progress per PDF, ends with BM25 rebuild confirmation.
 
 - [ ] **Step 3: Run a real query**
 
-Run: `python brain/query.py "What is normalization in databases?"`
+Run: `python src/query.py "What is normalization in databases?"`
 Expected: Prints a context block with 8 chunks, each with filename and page number.
 
 - [ ] **Step 4: Run full test suite**
 
-Run: `pytest brain/tests/ -v`
+Run: `pytest src/tests/ -v`
 Expected: All tests PASSED (unit tests only — no live Ollama required for tests)
 
 - [ ] **Step 5: Final commit**

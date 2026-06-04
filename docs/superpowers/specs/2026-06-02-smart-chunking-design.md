@@ -20,7 +20,7 @@
 Three files change, one new file is added:
 
 ```
-brain/
+src/
   router.py       ← NEW: ChunkingProfile dataclass, signal detection, routing, salvage
   chunk.py        ← REFACTORED: pure chunking strategies only, no routing decisions
   ingest.py       ← LIGHT UPDATE: calls router, passes profile to chunker
@@ -52,7 +52,7 @@ ingest.py — quality filter → embed → index → log
 
 ## 3. ChunkingProfile
 
-Defined in `brain/router.py`. Populated from signals before any chunking begins. Exposed as metadata on every chunk so routing decisions are auditable.
+Defined in `src/router.py`. Populated from signals before any chunking begins. Exposed as metadata on every chunk so routing decisions are auditable.
 
 ```python
 @dataclass
@@ -174,10 +174,10 @@ The NLI citation verifier already rejects stub-sourced claims naturally (a title
 
 | File | Change |
 |---|---|
-| `brain/router.py` | **New.** ChunkingProfile, signal detection, routing, salvage pass |
-| `brain/chunk.py` | **Refactored.** Remove `is_slide_deck`, add `chunk_semantic`, `chunk_structured`. `build_chunks_from_file` accepts a profile. |
-| `brain/ingest.py` | **Light update.** Import router, call `build_profile` after extraction, pass profile to chunker |
-| `brain/config.py` | **New constants.** `SEMANTIC_SPLIT_THRESHOLD`, `MIN_STUB_TOKENS` |
+| `src/router.py` | **New.** ChunkingProfile, signal detection, routing, salvage pass |
+| `src/chunk.py` | **Refactored.** Remove `is_slide_deck`, add `chunk_semantic`, `chunk_structured`. `build_chunks_from_file` accepts a profile. |
+| `src/ingest.py` | **Light update.** Import router, call `build_profile` after extraction, pass profile to chunker |
+| `src/config.py` | **New constants.** `SEMANTIC_SPLIT_THRESHOLD`, `MIN_STUB_TOKENS` |
 | `CLAUDE.md` | **One line added.** Stub chunk instruction |
 
 ---

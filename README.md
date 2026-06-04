@@ -26,8 +26,8 @@ ollama pull nomic-embed-text
 **Index your course materials:**
 ```powershell
 # Place files in raw/<course-name>/
-uv run python brain/ingest.py
-uv run python brain/graph.py
+uv run python src/ingest.py
+uv run python src/graph.py
 ```
 
 **Ask questions** (in Claude Code, from the vault directory):
@@ -38,7 +38,7 @@ Claude automatically runs the retrieval pipeline before answering.
 
 **Run tests:**
 ```powershell
-uv run pytest brain/tests/ -v
+uv run pytest src/tests/ -v
 ```
 
 ## File structure
@@ -48,11 +48,11 @@ raw/                    # source documents (gitignored PDFs)
   IS 6410/
   OSC 6680/
   ...
-notes/                  # generated Obsidian graph notes
+wiki/                  # generated Obsidian graph notes
   IS 6410/
   OSC 6680/
   ...
-brain/
+src/
   ingest.py             # index new documents
   query.py              # retrieval pipeline CLI
   graph.py              # Obsidian graph generator
@@ -76,7 +76,7 @@ pyproject.toml
 
 ## Configuration
 
-All tunable parameters are in `brain/config.py`:
+All tunable parameters are in `src/config.py`:
 
 | Parameter | Default | Description |
 |---|---|---|
