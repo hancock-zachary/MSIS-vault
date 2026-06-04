@@ -213,3 +213,41 @@ def test_chunk_semantic_splits_on_low_similarity():
     chunks = chunk_semantic(page, embed_fn=mock_embed)
     assert call_count[0] > 0
     assert all(c["is_stub"] is False for c in chunks)
+
+
+# ---------------------------------------------------------------------------
+# chunk_structured tests
+# ---------------------------------------------------------------------------
+from src.chunk import chunk_structured
+
+def test_chunk_structured_splits_md_on_headings():
+    page = {
+        "course": "IS 6410", "filename": "notes.md", "page": 1,
+        "slide_title": "",
+        "text": "# Sprint Planning\n\nSprint planning is the first event.\n\n# Daily Scrum\n\nThe daily scrum is 15 minutes."
+    }
+    chunks = chunk_structured([page])
+    assert len(chunks) == 2
+    assert "Sprint planning" in chunks[0]["text"]
+    assert "daily scrum" in chunks[1]["text"]
+    assert all(c["strategy"] == "structured" for c in chunks)
+    assert all(c["is_stub"] is False for c in chunks)
+
+def test_chunk_structured_no_headings_returns_window_chunks():
+    page = {
+        "course": "IS 6410", "filename": "notes.md", "page": 1,
+        "slide_title": "",
+        "text": "word " * 50  # no headings
+    }
+    chunks = chunk_structured([page])
+    assert len(chunks) >= 1
+    assert all(c["strategy"] == "structured" for c in chunks)
+
+def test_chunk_structured_sets_slide_title_from_heading():
+    page = {
+        "course": "IS 6410", "filename": "notes.md", "page": 1,
+        "slide_title": "",
+        "text": "## Scrum Artifacts\n\nProduct backlog, sprint backlog, and increment."
+    }
+    chunks = chunk_structured([page])
+    assert chunks[0]["slide_title"] == "Scrum Artifacts"
