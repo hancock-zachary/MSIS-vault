@@ -70,9 +70,31 @@ docs/
   superpowers/
     specs/              # design documents
     plans/              # implementation plans
-CLAUDE.md               # instructs Claude Code how to use this system
+CLAUDE.md               # instructs the AI assistant how to use this system
+AGENTS.md               # same file, for Codex (OpenAI)
+GEMINI.md               # same file, for Gemini CLI
 pyproject.toml
 ```
+
+## Using with other AI assistants
+
+The retrieval pipeline is provider-agnostic. To use with Gemini CLI or Codex instead of Claude Code, just copy the instruction file under the name your tool expects:
+
+| Tool | File to create |
+|---|---|
+| Claude Code | `CLAUDE.md` (already exists) |
+| Gemini CLI | `GEMINI.md` |
+| Codex (OpenAI) | `AGENTS.md` |
+
+```powershell
+# For Gemini CLI
+Copy-Item CLAUDE.md GEMINI.md
+
+# For Codex
+Copy-Item CLAUDE.md AGENTS.md
+```
+
+The content is identical — the instructions are plain text that any AI coding assistant will follow. No other changes are needed.
 
 ## Configuration
 
