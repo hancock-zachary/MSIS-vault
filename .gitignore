@@ -1,11 +1,26 @@
+# Remove some app specific folders
+.claude/
+.obsidian/
+
+# Remove some python related folders
+.pytest_cache/
+.venv/
+.worktrees/
+*.pyc
+
+# Remove environment variables
+# Currently the .env file does not contain any secrets.
 .env
+
+# Source code files
 src/chroma/
 src/bm25.pkl
 src/ingestion_log.json
 src/__pycache__/
 src/tests/__pycache__/
-*.pyc
-.worktrees/
+
+# Hide actual documents from being uploaded to GitHub
+docs/study-guides/
 raw/IS 6410/
 raw/IS 6495/
 raw/IS 6640/
@@ -13,7 +28,6 @@ raw/IS 6801/
 raw/IS 6410/
 raw/OSC 6660/
 raw/OSC 6680/
-
 wiki/IS 6410/
 wiki/IS 6495/
 wiki/IS 6640/
@@ -21,7 +35,5 @@ wiki/IS 6801/
 wiki/IS 6410/
 wiki/OSC 6660/
 wiki/OSC 6680/
-
-docs/study-guides/
 wiki/index.md
 wiki/log.md
