@@ -246,6 +246,9 @@ def chunk_semantic(page: dict, embed_fn) -> list[dict]:
         return chunks
 
     vectors = embed_fn(sentences)
+    assert len(vectors) == len(sentences), (
+        f"embed_fn returned {len(vectors)} vectors for {len(sentences)} sentences"
+    )
 
     split_points = []
     for i in range(len(vectors) - 1):
