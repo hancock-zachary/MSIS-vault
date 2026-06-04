@@ -315,7 +315,9 @@ def chunk_semantic(page: dict, embed_fn) -> list[dict]:
         if len(_enc.encode(seg_text)) > CHUNK_SIZE_TOKENS:
             sub_chunks = chunk_page(seg_page)
             for c in sub_chunks:
-                c["chunk_index"] = idx * 100 + c["chunk_index"]
+                new_index = idx * 100 + c["chunk_index"]
+                c["chunk_index"] = new_index
+                c["id"] = f"{page['course']}_{page['filename']}_p{page['page']}_c{new_index}"
                 c["strategy"] = "semantic"
                 c["is_stub"] = False
             chunks.extend(sub_chunks)
@@ -339,6 +341,12 @@ def chunk_semantic(page: dict, embed_fn) -> list[dict]:
         for c in chunks:
             c["strategy"] = "semantic"
             c["is_stub"] = False
+
+    # Renumber all chunks sequentially to guarantee unique IDs regardless of
+    # how many sub-chunks oversized segments produced.
+    for final_idx, c in enumerate(chunks):
+        c["id"] = f"{page['course']}_{page['filename']}_p{page['page']}_c{final_idx}"
+        c["chunk_index"] = final_idx
 
     return chunks
 
@@ -385,7 +393,9 @@ def chunk_structured(pages: list[dict]) -> list[dict]:
                 if len(_enc.encode(section_text)) > CHUNK_SIZE_TOKENS:
                     sub_chunks = chunk_page(section_page)
                     for c in sub_chunks:
-                        c["chunk_index"] = idx * 100 + c["chunk_index"]
+                        new_index = idx * 100 + c["chunk_index"]
+                        c["chunk_index"] = new_index
+                        c["id"] = f"{page['course']}_{page['filename']}_p{page['page']}_c{new_index}"
                         c["strategy"] = "structured"
                         c["is_stub"] = False
                     chunks.extend(sub_chunks)
