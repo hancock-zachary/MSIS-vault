@@ -158,3 +158,58 @@ def test_build_chunks_from_file_md(tmp_path):
     md_file.write_text("# Topic\n\n" + ("word " * 50), encoding="utf-8")
     chunks = build_chunks_from_file(md_file, course="IS 6410")
     assert len(chunks) >= 1
+
+
+# ---------------------------------------------------------------------------
+# chunk_semantic tests
+# ---------------------------------------------------------------------------
+from unittest.mock import patch
+import numpy as np
+from src.chunk import chunk_semantic
+
+def _make_dense_page(text: str) -> dict:
+    return {"course": "IS 6410", "filename": "reading.pdf", "page": 3,
+            "slide_title": "", "text": text}
+
+def test_chunk_semantic_returns_chunks_with_strategy():
+    page = _make_dense_page("The sprint begins on Monday. The team plans the work. Daily scrums happen each morning.")
+    fake_vectors = [[float(i)] * 768 for i in range(3)]
+
+    def mock_embed(texts):
+        return fake_vectors[:len(texts)]
+
+    chunks = chunk_semantic(page, embed_fn=mock_embed)
+    assert len(chunks) >= 1
+    assert all(c["strategy"] == "semantic" for c in chunks)
+    assert all(c["is_stub"] is False for c in chunks)
+
+def test_chunk_semantic_falls_back_to_window_when_single_sentence():
+    page = _make_dense_page("Just one sentence with no splits.")
+
+    def mock_embed(texts):
+        return [[0.1] * 768 for _ in texts]
+
+    chunks = chunk_semantic(page, embed_fn=mock_embed)
+    assert len(chunks) >= 1
+    assert all("strategy" in c for c in chunks)
+
+def test_chunk_semantic_splits_on_low_similarity():
+    text = (
+        "Scrum is an agile framework for managing software development. "
+        "Supply chain management involves logistics and procurement."
+    )
+    page = _make_dense_page(text)
+
+    call_count = [0]
+    def mock_embed(texts):
+        call_count[0] += len(texts)
+        vectors = []
+        for i, t in enumerate(texts):
+            v = [0.0] * 768
+            v[i % 768] = 1.0
+            vectors.append(v)
+        return vectors
+
+    chunks = chunk_semantic(page, embed_fn=mock_embed)
+    assert call_count[0] > 0
+    assert all(c["is_stub"] is False for c in chunks)

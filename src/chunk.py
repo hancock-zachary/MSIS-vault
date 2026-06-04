@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import fitz  # pymupdf
 import tiktoken
+import numpy as np
 from src.config import (
     CHUNK_SIZE_TOKENS, CHUNK_OVERLAP_TOKENS,
     SLIDE_PAGE_TOKEN_THRESHOLD, SLIDE_PAGES_PER_CHUNK,
@@ -210,6 +211,94 @@ def chunk_page(page: dict) -> list[dict]:
             break
         start = end - CHUNK_OVERLAP_TOKENS
         idx += 1
+    return chunks
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Split text into sentences on punctuation followed by whitespace and capital."""
+    parts = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
+    return [s.strip() for s in parts if s.strip()]
+
+
+def _cosine_sim(a: list[float], b: list[float]) -> float:
+    va, vb = np.array(a, dtype=float), np.array(b, dtype=float)
+    norm = np.linalg.norm(va) * np.linalg.norm(vb)
+    if norm == 0.0:
+        return 0.0
+    return float(np.dot(va, vb) / norm)
+
+
+def chunk_semantic(page: dict, embed_fn) -> list[dict]:
+    """Split a page at semantic boundaries using embedding similarity.
+
+    Embeds each sentence, finds consecutive pairs whose cosine similarity
+    drops below SEMANTIC_SPLIT_THRESHOLD, and splits there. Falls back to
+    overlapping window chunking if too few sentences or no splits found.
+    """
+    from src.config import SEMANTIC_SPLIT_THRESHOLD, CHUNK_SIZE_TOKENS
+
+    sentences = _split_sentences(page["text"])
+    if len(sentences) <= 1:
+        chunks = chunk_page(page)
+        for c in chunks:
+            c["strategy"] = "semantic"
+            c["is_stub"] = False
+        return chunks
+
+    vectors = embed_fn(sentences)
+
+    split_points = []
+    for i in range(len(vectors) - 1):
+        sim = _cosine_sim(vectors[i], vectors[i + 1])
+        if sim < SEMANTIC_SPLIT_THRESHOLD:
+            split_points.append(i + 1)
+
+    if not split_points:
+        chunks = chunk_page(page)
+        for c in chunks:
+            c["strategy"] = "semantic"
+            c["is_stub"] = False
+        return chunks
+
+    boundaries = [0] + split_points + [len(sentences)]
+    segments = [
+        " ".join(sentences[boundaries[i]:boundaries[i + 1]])
+        for i in range(len(boundaries) - 1)
+        if " ".join(sentences[boundaries[i]:boundaries[i + 1]]).strip()
+    ]
+
+    chunks = []
+    for idx, seg_text in enumerate(segments):
+        seg_page = dict(page)
+        seg_page["text"] = seg_text
+        if len(_enc.encode(seg_text)) > CHUNK_SIZE_TOKENS:
+            sub_chunks = chunk_page(seg_page)
+            for c in sub_chunks:
+                c["chunk_index"] = idx * 100 + c["chunk_index"]
+                c["strategy"] = "semantic"
+                c["is_stub"] = False
+            chunks.extend(sub_chunks)
+        else:
+            chunk_id = f"{page['course']}_{page['filename']}_p{page['page']}_c{idx}"
+            if len(_enc.encode(seg_text)) >= 10:
+                chunks.append({
+                    "id": chunk_id,
+                    "course": page["course"],
+                    "filename": page["filename"],
+                    "page": page["page"],
+                    "slide_title": page["slide_title"],
+                    "chunk_index": idx,
+                    "text": seg_text,
+                    "strategy": "semantic",
+                    "is_stub": False,
+                })
+
+    if not chunks:
+        chunks = chunk_page(page)
+        for c in chunks:
+            c["strategy"] = "semantic"
+            c["is_stub"] = False
+
     return chunks
 
 
