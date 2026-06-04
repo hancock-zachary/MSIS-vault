@@ -33,10 +33,17 @@ def _ollama_embed(text: str) -> list[float]:
     return _ollama_embed_batch([text])[0]
 
 
+_OLLAMA_BATCH_SIZE = 32  # Ollama rejects very large batches; send in chunks
+
+
 def _ollama_embed_batch(texts: list[str]) -> list[list[float]]:
-    resp = requests.post(config.OLLAMA_URL, json={"model": config.OLLAMA_MODEL, "input": texts})
-    resp.raise_for_status()
-    return resp.json()["embeddings"]
+    results = []
+    for i in range(0, len(texts), _OLLAMA_BATCH_SIZE):
+        batch = texts[i:i + _OLLAMA_BATCH_SIZE]
+        resp = requests.post(config.OLLAMA_URL, json={"model": config.OLLAMA_MODEL, "input": batch})
+        resp.raise_for_status()
+        results.extend(resp.json()["embeddings"])
+    return results
 
 
 def _openai_embed(texts: list[str]) -> list[list[float]]:
