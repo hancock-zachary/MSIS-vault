@@ -10,7 +10,7 @@ from pathlib import Path
 import tiktoken
 
 from src.chunk import is_quality_text
-from src.config import SLIDE_PAGE_TOKEN_THRESHOLD
+from src.config import SLIDE_PAGE_TOKEN_THRESHOLD, MIN_STUB_TOKENS
 
 _enc = tiktoken.get_encoding("cl100k_base")
 
@@ -80,3 +80,57 @@ def build_profile(path: Path, pages: list[dict]) -> ChunkingProfile:
         file_extension=ext,
         page_count=page_count,
     )
+
+
+def _extract_stub(page: dict) -> dict | None:
+    """Try to extract a meaningful title from a garbled page.
+
+    Takes the first non-empty line. Rejects it if it has fewer than
+    MIN_STUB_TOKENS meaningful words or too much single-character noise.
+    """
+    lines = [l.strip() for l in page["text"].splitlines() if l.strip()]
+    if not lines:
+        return None
+    title = lines[0]
+    title = re.sub(r'^#{1,3}\s+', '', title).strip()
+    if not title:
+        return None
+
+    words = [w for w in title.split() if re.sub(r"[^a-zA-Z]", "", w)]
+    if len(words) < MIN_STUB_TOKENS:
+        return None
+    single_char = sum(1 for w in words if len(re.sub(r"[^a-zA-Z]", "", w)) <= 1)
+    if words and single_char / len(words) > 0.2:
+        return None
+
+    chunk_id = f"{page['course']}_{page['filename']}_p{page['page']}_stub"
+    return {
+        "id": chunk_id,
+        "course": page["course"],
+        "filename": page["filename"],
+        "page": page["page"],
+        "slide_title": page.get("slide_title", ""),
+        "chunk_index": 0,
+        "text": title,
+        "strategy": "salvage",
+        "is_stub": True,
+    }
+
+
+def salvage_pass(pages: list[dict], profile: ChunkingProfile) -> list[dict]:
+    """Create stub chunks from garbled pages that have extractable titles.
+
+    Only runs when profile.garbled_page_ratio > 0. For each page that fails
+    the quality check, attempts to extract the first line as a stub chunk.
+    """
+    if profile.garbled_page_ratio == 0.0:
+        return []
+
+    stubs = []
+    for page in pages:
+        if is_quality_text(page["text"]):
+            continue
+        stub = _extract_stub(page)
+        if stub:
+            stubs.append(stub)
+    return stubs
