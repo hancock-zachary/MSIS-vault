@@ -1,5 +1,5 @@
 ---
-name: querying-second-brain
+name: query-second-brain
 description: Answers factual study questions using the MSIS vault. Runs the full retrieval pipeline — wiki index, wiki pages, then query.py — and returns cited answers. Use when the user asks ANY factual question about course material. NEVER modifies files.
 ---
 
