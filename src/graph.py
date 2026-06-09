@@ -199,7 +199,7 @@ def _write_page(
 def _write_index(wiki_dir: Path, docs_by_course: dict[str, list[dict]]) -> None:
     """Write wiki/index.md — a catalog of every page, organized by course.
 
-    Each entry includes a wikilink and a one-line preview from the first chunk.
+    Each entry includes a plain-text title and a one-line preview from the first chunk.
     The LLM reads this file first when answering queries so it knows what exists.
     """
     today = date.today().isoformat()
@@ -218,7 +218,7 @@ def _write_index(wiki_dir: Path, docs_by_course: dict[str, list[dict]]) -> None:
         lines += [f"## {course}", ""]
         for entry in sorted(docs_by_course[course], key=lambda x: x["title"]):
             preview = entry.get("preview", "")
-            lines.append(f"- [[{entry['title']}]] — {entry['chunks']} chunks · {preview}")
+            lines.append(f"- {entry['title']} — {entry['chunks']} chunks · {preview}")
         lines.append("")
 
     (wiki_dir / "index.md").write_text("\n".join(lines), encoding="utf-8")
@@ -368,7 +368,7 @@ def run_graph():
             "preview": preview,
         })
 
-        print(f"  {_note_title(filename)}.md → {len(related)} links")
+        print(f"  {_note_title(filename)}.md -> {len(related)} links")
 
     # Phase 4: regenerate wiki/index.md
     _write_index(WIKI_DIR, docs_by_course)
