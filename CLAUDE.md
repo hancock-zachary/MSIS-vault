@@ -27,6 +27,10 @@ Each wiki page has:
 
 ## Answering study questions
 
+**Always invoke the `querying-second-brain` skill before answering any factual question.**
+The user will typically prefix their question with `/querying-second-brain`. If they do not,
+invoke the skill yourself before proceeding.
+
 When the user asks any factual question:
 
 1. Read `wiki/index.md` to identify relevant pages.
