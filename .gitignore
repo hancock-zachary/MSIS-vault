@@ -1,5 +1,6 @@
 # Remove some app specific folders
-.claude/
+.claude/settings.json
+.claude/settings.local.json
 .obsidian/
 
 # Remove some python related folders
