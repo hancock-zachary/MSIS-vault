@@ -111,6 +111,17 @@ explanation), create a new wiki page for it:
 
 ---
 
+## Evaluating retrieval quality
+
+```
+uv run python src/eval.py generate              # one-time: build question set from indexed chunks
+uv run python src/eval.py run                   # score retrieval, compare against baseline
+uv run python src/eval.py run --save-baseline   # set the comparison baseline
+```
+
+Run the eval before and after changing chunking/embedding/retrieval parameters.
+`eval/` is gitignored (question snippets contain course material).
+
 ## Running tests
 
 ```

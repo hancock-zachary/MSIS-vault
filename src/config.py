@@ -29,6 +29,15 @@ OPENAI_EMBED_MODEL = "text-embedding-3-small"
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 
+EVAL_DIR = VAULT_ROOT / "eval"
+EVAL_QUESTIONS_PATH = EVAL_DIR / "questions.json"
+EVAL_BASELINE_PATH = EVAL_DIR / "baseline.json"
+EVAL_RESULTS_DIR = EVAL_DIR / "results"
+EVAL_QUESTION_COUNT = 50    # default questions to auto-generate
+EVAL_SNIPPET_CHARS = 120    # gold snippet length for passage-level matching
+EVAL_MIN_CHUNK_CHARS = 200  # chunks shorter than this are skipped during generation
+EVAL_SAMPLE_SEED = 42       # fixed seed so question generation is reproducible
+
 WIKI_DIR = VAULT_ROOT / "wiki"
 GRAPH_TOP_K = 10           # candidate pool size per document before mutual filtering
 GRAPH_MIN_SIMILARITY = 0.72 # minimum avg similarity — filters weak vocabulary overlap

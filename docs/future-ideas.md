@@ -8,17 +8,6 @@ expanding coverage.
 
 ## Priority 1 — Correctness and retrieval-quality fixes (high impact, low effort)
 
-### Evaluation Script
-A batch evaluation harness (`src/eval.py`) that runs a set of known questions against
-the pipeline and scores: retrieval precision (recall@k, MRR at both document and chunk
-level), citation accuracy, and grounding ratio. Question set is auto-generated from
-sampled indexed chunks (each question's gold answer = the chunk it came from), saved
-to an editable JSON file. Makes every other tuning change below measurable and detects
-regressions when config parameters change.
-
-**Sequencing note:** capture a baseline score *before* the prefix-fix re-index wipes
-the old embeddings, so the before/after comparison isn't lost.
-
 ### Page Ranges for Slide Chunks
 `chunk_slides()` groups 4 pages into one chunk but stores only the *first* page number.
 `verify.py` looks up cited chunks by exact `(filename, page)` match, so a claim citing
@@ -99,6 +88,13 @@ Several config values are educated guesses: `SEMANTIC_SPLIT_THRESHOLD` (0.4),
 `SLIDE_PAGES_PER_CHUNK` (4), `SLIDE_PAGE_TOKEN_THRESHOLD` (150),
 `GRAPH_MIN_SIMILARITY` (0.72), `RRF_K`, `RERANK_THRESHOLD`. Sweep each against the
 eval harness and keep the winners.
+
+### Answer-Level Evaluation (Citation Accuracy + Grounding Ratio)
+The eval harness (`src/eval.py`) scores retrieval only. Extend it to optionally
+generate full answers via Claude for each eval question and score citation accuracy
+(does each cited filename/page actually match the gold source?) and grounding ratio
+(what fraction of claims pass NLI entailment verification?). Costly per run — keep it
+a separate opt-in mode from the fast retrieval eval.
 
 ### Cross-Course Graph Links + Synthesis
 Label cross-course links distinctly on wiki pages (they're the most interesting kind),
@@ -186,3 +182,6 @@ vaults per semester.
 - ~~Real Entailment Verification (NLI model)~~ ✅
 - ~~Nomic Embedding Task Prefixes~~ ✅ (code done — full re-index still required so
   stored document embeddings match the new prefixed format)
+- ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
+  and MRR at retrieval + rerank stages, auto-generated question set, baseline
+  comparison; answer-level metrics moved to a separate P2 item)
