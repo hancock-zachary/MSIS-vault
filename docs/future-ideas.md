@@ -6,7 +6,7 @@ expanding coverage.
 
 ---
 
-## Priority 1 — Retrieval quality fixes (high impact, low effort)
+## Priority 1 — Correctness and retrieval-quality fixes (high impact, low effort)
 
 ### Nomic Embedding Task Prefixes
 `nomic-embed-text` is trained with task prefixes and underperforms without them, but
@@ -26,6 +26,13 @@ regressions when config parameters change.
 **Sequencing note:** capture a baseline score *before* the prefix-fix re-index wipes
 the old embeddings, so the before/after comparison isn't lost.
 
+### Page Ranges for Slide Chunks
+`chunk_slides()` groups 4 pages into one chunk but stores only the *first* page number.
+`verify.py` looks up cited chunks by exact `(filename, page)` match, so a claim citing
+page 3 of a group keyed at page 1 fails the lookup and gets marked "unverified" even
+when correct. Store `page_start`/`page_end` metadata and match within the range —
+fixes both entailment verification and citation precision.
+
 ### Contextual Chunk Enrichment
 Prepend a small context header (`<course> · <filename> · <slide title>`) to each
 chunk's text before embedding, so a chunk that says "the three phases are..." carries
@@ -33,9 +40,21 @@ its surrounding context into the vector. A lightweight version of Anthropic's
 contextual retrieval. Store the clean text for display/citation; embed the enriched
 text. Requires re-index — should land in the same re-index as the prefix fix.
 
+### Better BM25 Tokenization
+`index.py` tokenizes with `text.lower().split()`, so `"systems,"` never matches
+`"systems"`. Strip punctuation and stopwords (optionally add light stemming) at both
+index and query time. Cheap sparse-retrieval win; requires rebuilding the BM25 pickle
+but not re-embedding.
+
+### Stub Down-weighting in Retrieval
+Stub chunks (salvaged titles from garbled image pages) are indexed like normal chunks.
+Being short and keyword-dense, BM25 can rank them highly, wasting top-K slots on
+content that must not be cited as factual. Filter or penalize `is_stub` chunks during
+retrieval/reranking so they only surface when nothing better exists.
+
 ---
 
-## Priority 2 — Chunking and graph improvements (measured against the eval harness)
+## Priority 2 — Chunking, retrieval, and graph improvements (measured against the eval harness)
 
 ### Slide Chunk Boundary Improvements
 `chunk_slides()` groups a fixed 4 pages per chunk with no overlap, so related slides
@@ -43,11 +62,17 @@ get split at arbitrary boundaries. Improvements to test against the eval harness
 1. Add a 1-page overlap between consecutive slide groups
 2. When a PDF outline exists, split at section-title boundaries instead of fixed counts
 
-### Smarter Wiki Excerpts
-`graph.py` currently shows the first two chunks by page number, which is usually the
-title slide and agenda. Instead pick the chunks closest to the document's embedding
-centroid — the most representative content — so wiki pages and index previews actually
-describe the document.
+### Course-Scoped Retrieval
+`query.py` has no way to restrict a question to one course even though the metadata
+exists. Detect course mentions in the question (or accept a `--course` flag) and pass
+a Chroma `where` filter plus a BM25-side filter. Prevents cross-course vocabulary
+collisions (e.g. "agile" appearing in three different courses).
+
+### Neighbor Chunk Expansion (Small-to-Big)
+After reranking, fetch the adjacent chunks (same file, page ±1) for the winning chunks
+so Claude sees fuller context than the embedded snippet. Standard RAG upgrade that
+pairs well with semantic chunking — retrieval precision stays chunk-level while answer
+context becomes section-level.
 
 ### Document Trust / Source Weighting
 Different document types have different levels of authority. Lecture slides from a
@@ -64,6 +89,17 @@ Implementation:
 
 This becomes critical when assignments and coursework enter the index — an incorrect
 answer you wrote on an exam should not be cited as a factual source.
+
+### Smarter Wiki Excerpts
+`graph.py` currently shows the first two chunks by page number, which is usually the
+title slide and agenda. Instead pick the chunks closest to the document's embedding
+centroid — the most representative content — so wiki pages and index previews actually
+describe the document.
+
+### Diversity in Final Selection (MMR)
+The cross-encoder reranker can return 8 near-duplicate chunks from the same page.
+Maximal-marginal-relevance selection trades a little relevance for broader coverage
+of the question. Tune the relevance/diversity balance against the eval harness.
 
 ### Config Threshold Tuning
 Several config values are educated guesses: `SEMANTIC_SPLIT_THRESHOLD` (0.4),
@@ -103,12 +139,17 @@ professor adds beyond the slide deck.
 
 ---
 
-## Priority 4 — Access and tooling
+## Priority 4 — Access, tooling, and performance
 
 ### Local API Server
 Wrap `src/query.py` in a FastAPI server so the second brain can be queried from
 anywhere — Claude.ai, Cowork, a browser, or a mobile app. Would enable the full RAG
 pipeline (rewrite → retrieve → rerank → verify) outside of Claude Code CLI.
+
+### Query Rewrite Caching
+Every query shells out to `claude -p` for rewriting (up to 30s, costs tokens). Cache
+rewrites by question hash, and/or fall back to a local model, to cut latency and cost
+for repeated or similar questions.
 
 ### Obsidian Plugin UI
 A native Obsidian sidebar plugin that lets you ask questions and see cited answers
@@ -133,7 +174,12 @@ answering them — forces retrieval practice rather than passive review.
 
 ---
 
-## Priority 6 — Infrastructure
+## Priority 6 — Infrastructure and engineering hygiene
+
+### Single Source of Truth for BM25
+The BM25 pickle stores its own copy of every chunk, parallel to ChromaDB, and the two
+can drift — purge logic in `ingest.py` has to maintain both stores by hand. Rebuild
+BM25 from Chroma's contents on each ingest instead, eliminating the drift risk.
 
 ### Multi-Vault / Multi-User Support
 Extend the system to support multiple students sharing a knowledge base, or separate
