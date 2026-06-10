@@ -17,20 +17,27 @@ def _get_openai_client():
     return _openai_client
 
 
-def embed_text(text: str) -> list[float]:
+# nomic-embed-text is trained with task prefixes and underperforms without them.
+# Applied only on the Ollama path — OpenAI embedding models don't use prefixes.
+# Prefixes exist only in the embedding request; stored chunk text stays clean.
+_TASK_PREFIXES = {"document": "search_document: ", "query": "search_query: "}
+
+
+def _apply_prefix(texts: list[str], kind: str) -> list[str]:
+    prefix = _TASK_PREFIXES[kind]
+    return [prefix + t for t in texts]
+
+
+def embed_text(text: str, kind: str = "query") -> list[float]:
     if config.EMBED_PROVIDER == "ollama":
-        return _ollama_embed(text)
+        return _ollama_embed_batch(_apply_prefix([text], kind))[0]
     return _openai_embed([text])[0]
 
 
-def embed_batch(texts: list[str]) -> list[list[float]]:
+def embed_batch(texts: list[str], kind: str = "document") -> list[list[float]]:
     if config.EMBED_PROVIDER == "ollama":
-        return _ollama_embed_batch(texts)
+        return _ollama_embed_batch(_apply_prefix(texts, kind))
     return _openai_embed(texts)
-
-
-def _ollama_embed(text: str) -> list[float]:
-    return _ollama_embed_batch([text])[0]
 
 
 _OLLAMA_BATCH_SIZE = 32  # Ollama rejects very large batches; send in chunks

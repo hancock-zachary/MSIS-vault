@@ -8,13 +8,6 @@ expanding coverage.
 
 ## Priority 1 — Correctness and retrieval-quality fixes (high impact, low effort)
 
-### Nomic Embedding Task Prefixes
-`nomic-embed-text` is trained with task prefixes and underperforms without them, but
-`src/embed.py` currently sends bare text. Fix: prepend `search_document: ` to chunk
-text at indexing time and `search_query: ` to questions at query time (only for the
-Ollama provider — OpenAI models don't use prefixes). This is closer to a bug fix than
-a feature. Requires a full re-index since it changes every stored embedding.
-
 ### Evaluation Script
 A batch evaluation harness (`src/eval.py`) that runs a set of known questions against
 the pipeline and scores: retrieval precision (recall@k, MRR at both document and chunk
@@ -191,3 +184,5 @@ vaults per semester.
 
 - ~~Slide-Aware Chunking Strategy~~ ✅
 - ~~Real Entailment Verification (NLI model)~~ ✅
+- ~~Nomic Embedding Task Prefixes~~ ✅ (code done — full re-index still required so
+  stored document embeddings match the new prefixed format)
