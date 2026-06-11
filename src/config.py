@@ -14,6 +14,7 @@ SEMANTIC_SPLIT_THRESHOLD = 0.4  # cosine similarity drop below this triggers a s
 MIN_STUB_TOKENS = 3              # minimum meaningful words for a garbled-page title to become a stub
 SLIDE_PAGE_TOKEN_THRESHOLD = 150  # avg tokens/page below this → treat as slide deck
 SLIDE_PAGES_PER_CHUNK = 4         # consecutive pages grouped into one slide chunk
+SLIDE_PAGE_OVERLAP = 1            # pages shared between consecutive slide groups
 BOILERPLATE_PAGE_RATIO = 0.4      # line appearing on >40% of pages is boilerplate
 BOILERPLATE_MIN_PAGES = 4         # min pages needed before boilerplate detection runs
 TOP_K_RETRIEVAL = 20      # per retrieval method per variant

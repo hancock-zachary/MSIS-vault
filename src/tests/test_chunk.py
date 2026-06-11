@@ -119,9 +119,10 @@ def test_chunk_page_overlaps_long_text():
     assert words_0[-1] == words_1[0] or words_0[-10:] == words_1[:10]
 
 
-def _make_page(course="IS 6410", filename="test.pdf", page=1, text="slide content"):
+def _make_page(course="IS 6410", filename="test.pdf", page=1, text="slide content",
+               slide_title=""):
     return {"course": course, "filename": filename, "page": page,
-            "slide_title": "", "text": text}
+            "slide_title": slide_title, "text": text}
 
 
 def test_is_slide_deck_detects_short_pages():
@@ -135,13 +136,17 @@ def test_is_slide_deck_rejects_dense_text():
     assert is_slide_deck(pages) is False
 
 
-def test_chunk_slides_groups_pages():
+def test_chunk_slides_overlaps_consecutive_groups():
+    # 8 pages, group size 4, overlap 1 → groups 1-4, 4-7, 7-8. The boundary
+    # page appears in both neighbouring chunks so related slides aren't cut.
     pages = [_make_page(page=i, text=f"slide {i} content") for i in range(1, 9)]
     chunks = chunk_slides(pages)
-    assert len(chunks) == 8 // SLIDE_PAGES_PER_CHUNK
-    assert "slide 1 content" in chunks[0]["text"]
+    assert len(chunks) == 3
     assert "slide 4 content" in chunks[0]["text"]
-    assert "slide 5 content" in chunks[1]["text"]
+    assert "slide 4 content" in chunks[1]["text"]
+    assert (chunks[0]["page_start"], chunks[0]["page_end"]) == (1, 4)
+    assert (chunks[1]["page_start"], chunks[1]["page_end"]) == (4, 7)
+    assert (chunks[2]["page_start"], chunks[2]["page_end"]) == (7, 8)
 
 
 def test_chunk_slides_id_uses_first_page():
@@ -151,13 +156,11 @@ def test_chunk_slides_id_uses_first_page():
     assert chunks[0]["page"] == 1
 
 
-def test_chunk_slides_sets_page_range():
-    pages = [_make_page(page=i, text=f"slide {i}") for i in range(1, 7)]
+def test_chunk_slides_single_group_when_pages_fit():
+    # Exactly one group — no degenerate overlap-only trailing chunk.
+    pages = [_make_page(page=i, text=f"slide {i}") for i in range(1, 5)]
     chunks = chunk_slides(pages)
-    assert chunks[0]["page_start"] == 1
-    assert chunks[0]["page_end"] == 4
-    assert chunks[1]["page_start"] == 5
-    assert chunks[1]["page_end"] == 6
+    assert len(chunks) == 1
 
 
 def test_chunk_slides_handles_remainder():
@@ -166,6 +169,40 @@ def test_chunk_slides_handles_remainder():
     assert len(chunks) == 2
     assert "slide 5" in chunks[1]["text"]
     assert "slide 6" in chunks[1]["text"]
+
+
+def test_chunk_slides_splits_at_outline_sections():
+    # Titled pages start new sections; chunks never span a section boundary
+    # even when the fixed group size would.
+    pages = [
+        _make_page(page=1, text="intro a", slide_title="Introduction"),
+        _make_page(page=2, text="intro b"),
+        _make_page(page=3, text="intro c"),
+        _make_page(page=4, text="methods a", slide_title="Methods"),
+        _make_page(page=5, text="methods b"),
+        _make_page(page=6, text="methods c"),
+    ]
+    chunks = chunk_slides(pages)
+    assert len(chunks) == 2
+    assert (chunks[0]["page_start"], chunks[0]["page_end"]) == (1, 3)
+    assert (chunks[1]["page_start"], chunks[1]["page_end"]) == (4, 6)
+    assert chunks[0]["slide_title"] == "Introduction"
+    assert chunks[1]["slide_title"] == "Methods"
+    assert "methods" not in chunks[0]["text"]
+
+
+def test_chunk_slides_windows_large_sections_with_title():
+    # A long section still gets windowed, and every window carries the
+    # section title (feeds the embedding context header).
+    pages = [_make_page(page=1, text="intro 1", slide_title="Introduction")] + [
+        _make_page(page=i, text=f"intro {i}") for i in range(2, 10)
+    ]
+    chunks = chunk_slides(pages)
+    assert len(chunks) == 3
+    assert (chunks[0]["page_start"], chunks[0]["page_end"]) == (1, 4)
+    assert (chunks[1]["page_start"], chunks[1]["page_end"]) == (4, 7)
+    assert (chunks[2]["page_start"], chunks[2]["page_end"]) == (7, 9)
+    assert all(c["slide_title"] == "Introduction" for c in chunks)
 
 
 def test_build_chunks_from_file_pdf(sample_pdf):

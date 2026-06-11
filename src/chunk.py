@@ -6,7 +6,7 @@ import tiktoken
 import numpy as np
 from src.config import (
     CHUNK_SIZE_TOKENS, CHUNK_OVERLAP_TOKENS,
-    SLIDE_PAGE_TOKEN_THRESHOLD, SLIDE_PAGES_PER_CHUNK,
+    SLIDE_PAGE_TOKEN_THRESHOLD, SLIDE_PAGES_PER_CHUNK, SLIDE_PAGE_OVERLAP,
     SUPPORTED_EXTENSIONS, BOILERPLATE_PAGE_RATIO, BOILERPLATE_MIN_PAGES,
 )
 
@@ -210,25 +210,68 @@ def is_slide_deck(pages: list[dict]) -> bool:
     return _avg_tokens_per_page(pages) < SLIDE_PAGE_TOKEN_THRESHOLD
 
 
+def _window_pages(pages: list[dict], size: int, overlap: int) -> list[list[dict]]:
+    """Split pages into groups of `size` sharing `overlap` pages at each seam."""
+    groups = []
+    start = 0
+    while start < len(pages):
+        end = min(start + size, len(pages))
+        groups.append(pages[start:end])
+        if end == len(pages):
+            break
+        start = end - overlap
+    return groups
+
+
+def _split_at_titled_pages(pages: list[dict]) -> list[tuple[str, list[dict]]]:
+    """Partition pages into (section_title, pages) runs starting at titled pages."""
+    sections = []
+    current_title = ""
+    current: list[dict] = []
+    for page in pages:
+        if page.get("slide_title") and current:
+            sections.append((current_title, current))
+            current = []
+        if page.get("slide_title"):
+            current_title = page["slide_title"]
+        current.append(page)
+    if current:
+        sections.append((current_title, current))
+    return sections
+
+
 def chunk_slides(pages: list[dict]) -> list[dict]:
-    """Group consecutive pages into chunks for slide decks."""
+    """Group consecutive pages into chunks for slide decks.
+
+    When outline titles are present, pages are first partitioned into
+    sections at titled pages so chunks never span a section boundary.
+    Each section (or the whole deck when no outline exists) is windowed
+    into SLIDE_PAGES_PER_CHUNK groups sharing SLIDE_PAGE_OVERLAP pages,
+    so related slides cut by a window seam still co-occur in one chunk.
+    """
+    if any(p.get("slide_title") for p in pages):
+        sections = _split_at_titled_pages(pages)
+    else:
+        sections = [("", pages)]
+
     chunks = []
-    for group_idx, i in enumerate(range(0, len(pages), SLIDE_PAGES_PER_CHUNK)):
-        group = pages[i:i + SLIDE_PAGES_PER_CHUNK]
-        combined_text = "\n\n".join(p["text"] for p in group)
-        first = group[0]
-        chunk_id = f"{first['course']}_{first['filename']}_p{first['page']}_c{group_idx}"
-        chunks.append({
-            "id": chunk_id,
-            "course": first["course"],
-            "filename": first["filename"],
-            "page": first["page"],
-            "page_start": first["page"],
-            "page_end": group[-1]["page"],
-            "slide_title": first["slide_title"],
-            "chunk_index": group_idx,
-            "text": combined_text,
-        })
+    idx = 0
+    for section_title, section_pages in sections:
+        for group in _window_pages(section_pages, SLIDE_PAGES_PER_CHUNK, SLIDE_PAGE_OVERLAP):
+            first = group[0]
+            chunk_id = f"{first['course']}_{first['filename']}_p{first['page']}_c{idx}"
+            chunks.append({
+                "id": chunk_id,
+                "course": first["course"],
+                "filename": first["filename"],
+                "page": first["page"],
+                "page_start": first["page"],
+                "page_end": group[-1]["page"],
+                "slide_title": section_title,
+                "chunk_index": idx,
+                "text": "\n\n".join(p["text"] for p in group),
+            })
+            idx += 1
     return chunks
 
 

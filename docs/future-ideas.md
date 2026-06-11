@@ -14,12 +14,6 @@ _All complete — see Done section._
 
 ## Priority 2 — Chunking, retrieval, and graph improvements (measured against the eval harness)
 
-### Slide Chunk Boundary Improvements
-`chunk_slides()` groups a fixed 4 pages per chunk with no overlap, so related slides
-get split at arbitrary boundaries. Improvements to test against the eval harness:
-1. Add a 1-page overlap between consecutive slide groups
-2. When a PDF outline exists, split at section-title boundaries instead of fixed counts
-
 ### Course-Scoped Retrieval
 `query.py` has no way to restrict a question to one course even though the metadata
 exists. Detect course mentions in the question (or accept a `--course` flag) and pass
@@ -156,6 +150,10 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Slide Chunk Boundary Improvements~~ ✅ (1-page overlap between slide groups via
+  `SLIDE_PAGE_OVERLAP`; outlined decks split at section-title boundaries with the
+  section title carried onto every window; validate against the eval baseline after
+  re-indexing)
 - ~~Single Source of Truth for BM25~~ ✅ (BM25 pickle is now a derived cache rebuilt
   from ChromaDB at the end of every ingest run — crashes and purges can no longer
   leave the two stores out of sync)
