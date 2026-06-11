@@ -426,6 +426,20 @@ def chunk_structured(pages: list[dict]) -> list[dict]:
     return chunks
 
 
+def enrich_for_embedding(chunk: dict) -> str:
+    """Build the text sent to the embedding model: a context header (course,
+    document, slide title) prepended to the chunk text, so the vector carries
+    surrounding context the chunk text alone lacks. The stored chunk text
+    stays clean — enrichment exists only in the embedding input."""
+    parts = [
+        chunk.get("course", ""),
+        Path(chunk["filename"]).stem,
+        chunk.get("slide_title", ""),
+    ]
+    header = " - ".join(p for p in parts if p)
+    return f"{header}\n{chunk['text']}"
+
+
 def build_chunks_from_file(path: Path, course: str) -> list[dict]:
     """Extract and chunk any supported file type using the signal-based router.
 

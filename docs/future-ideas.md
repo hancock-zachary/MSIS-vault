@@ -8,13 +8,6 @@ expanding coverage.
 
 ## Priority 1 — Correctness and retrieval-quality fixes (high impact, low effort)
 
-### Contextual Chunk Enrichment
-Prepend a small context header (`<course> · <filename> · <slide title>`) to each
-chunk's text before embedding, so a chunk that says "the three phases are..." carries
-its surrounding context into the vector. A lightweight version of Anthropic's
-contextual retrieval. Store the clean text for display/citation; embed the enriched
-text. Requires re-index — should land in the same re-index as the prefix fix.
-
 ### Better BM25 Tokenization
 `index.py` tokenizes with `text.lower().split()`, so `"systems,"` never matches
 `"systems"`. Strip punctuation and stopwords (optionally add light stemming) at both
@@ -178,6 +171,8 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Contextual Chunk Enrichment~~ ✅ (course · document · slide-title header prepended
+  at embedding time only; stored chunk text stays clean; takes effect on re-index)
 - ~~Page Ranges for Slide Chunks~~ ✅ (slide chunks store `page_start`/`page_end`,
   verify.py matches citations within the range, query.py shows "pages X-Y"; chunks
   indexed before the re-index lack range metadata and fall back to exact-page match)

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from src.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
-from src.chunk import build_chunks_from_file, is_quality_text
+from src.chunk import build_chunks_from_file, enrich_for_embedding, is_quality_text
 from src.embed import embed_batch
 from src.index import get_collection, upsert_chunks, build_bm25, load_bm25
 
@@ -98,7 +98,7 @@ def run_ingestion():
         if not chunks:
             print(f"  WARNING: all chunks were garbled in {file_path.name}, skipping.")
             continue
-        vectors = embed_batch([c["text"] for c in chunks])
+        vectors = embed_batch([enrich_for_embedding(c) for c in chunks])
         upsert_chunks(collection, chunks, vectors)
         all_new_chunks.extend(chunks)
         log_indexed(log, file_path, INGESTION_LOG)

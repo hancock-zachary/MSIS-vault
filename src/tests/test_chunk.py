@@ -2,6 +2,7 @@ from pathlib import Path
 from src.chunk import (
     extract_pages, chunk_page, chunk_slides, is_slide_deck,
     build_chunks_from_file, _extract_pages_text, is_quality_text,
+    enrich_for_embedding,
 )
 from src.config import SLIDE_PAGES_PER_CHUNK
 
@@ -263,3 +264,26 @@ def test_chunk_structured_sets_slide_title_from_heading():
     }
     chunks = chunk_structured([page])
     assert chunks[0]["slide_title"] == "Scrum Artifacts"
+
+
+def test_enrich_for_embedding_prepends_context_header():
+    chunk = {
+        "course": "IS 6410",
+        "filename": "week3-erd.pdf",
+        "slide_title": "ER Diagrams",
+        "text": "An ERD models entities.",
+    }
+    enriched = enrich_for_embedding(chunk)
+    assert enriched.startswith("IS 6410 - week3-erd - ER Diagrams")
+    assert enriched.endswith("An ERD models entities.")
+
+
+def test_enrich_for_embedding_omits_empty_slide_title():
+    chunk = {
+        "course": "IS 6410",
+        "filename": "week3-erd.pdf",
+        "slide_title": "",
+        "text": "An ERD models entities.",
+    }
+    enriched = enrich_for_embedding(chunk)
+    assert enriched.startswith("IS 6410 - week3-erd\n")
