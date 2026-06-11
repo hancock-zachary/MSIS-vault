@@ -14,12 +14,6 @@ _All complete — see Done section._
 
 ## Priority 2 — Chunking, retrieval, and graph improvements (measured against the eval harness)
 
-### Neighbor Chunk Expansion (Small-to-Big)
-After reranking, fetch the adjacent chunks (same file, page ±1) for the winning chunks
-so Claude sees fuller context than the embedded snippet. Standard RAG upgrade that
-pairs well with semantic chunking — retrieval precision stays chunk-level while answer
-context becomes section-level.
-
 ### Document Trust / Source Weighting
 Different document types have different levels of authority. Lecture slides from a
 professor are a primary source; assigned readings are secondary; student assignments
@@ -144,6 +138,9 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Neighbor Chunk Expansion (Small-to-Big)~~ ✅ (reranked winners absorb page-adjacent
+  chunk text via `NEIGHBOR_PAGE_WINDOW`; each neighbor claimed once so context never
+  duplicates; page ranges widen so citations to merged pages still verify)
 - ~~Course-Scoped Retrieval~~ ✅ (`--course` flag on query.py plus auto-detection when
   the question mentions exactly one known course; filters both Chroma and BM25;
   multi-course questions stay unscoped for cross-course synthesis)

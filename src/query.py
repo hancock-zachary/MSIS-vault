@@ -12,7 +12,7 @@ needs candidates from all of them.
 import argparse
 import sys
 from src.rewrite import rewrite_query
-from src.retrieve import hybrid_retrieve
+from src.retrieve import expand_neighbors, hybrid_retrieve
 from src.rerank import rerank_chunks
 from src.config import RAW_DIR, TOP_K_RERANK
 
@@ -70,6 +70,9 @@ def run_query(question: str, course: str | None = None) -> str:
     print(f"[src] Reranking...", file=sys.stderr)
     top_chunks = rerank_chunks(question, candidates, top_k=TOP_K_RERANK)
     print(f"[src] {len(top_chunks)} chunks after reranking.", file=sys.stderr)
+
+    print(f"[src] Expanding neighbor chunks...", file=sys.stderr)
+    top_chunks = expand_neighbors(top_chunks)
 
     return format_context(question, top_chunks)
 

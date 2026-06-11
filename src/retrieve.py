@@ -1,7 +1,70 @@
 from collections import defaultdict
-from src.config import RRF_K, STUB_RRF_MULTIPLIER, TOP_K_RETRIEVAL, BM25_PATH
+from src.config import (
+    NEIGHBOR_PAGE_WINDOW, RRF_K, STUB_RRF_MULTIPLIER, TOP_K_RETRIEVAL, BM25_PATH,
+)
 from src.embed import embed_text
 from src.index import get_collection, query_dense, load_bm25, query_bm25
+
+
+def _chunk_range(chunk: dict) -> tuple[int, int]:
+    start = chunk.get("page_start", chunk.get("page", 0))
+    end = chunk.get("page_end", chunk.get("page", 0))
+    return start, end
+
+
+def _reading_order(chunk: dict) -> tuple[int, int]:
+    return _chunk_range(chunk)[0], chunk.get("chunk_index", 0)
+
+
+def select_neighbors(chunk: dict, same_file_chunks: list[dict],
+                     window: int = NEIGHBOR_PAGE_WINDOW) -> list[dict]:
+    """Non-stub chunks whose page range touches the chunk's range ± window,
+    in reading order. Same-page siblings (semantic sub-chunks) count too."""
+    start, end = _chunk_range(chunk)
+    lo, hi = start - window, end + window
+    neighbors = []
+    for candidate in same_file_chunks:
+        if candidate["id"] == chunk["id"] or candidate.get("is_stub"):
+            continue
+        c_start, c_end = _chunk_range(candidate)
+        if c_start <= hi and c_end >= lo:
+            neighbors.append(candidate)
+    neighbors.sort(key=_reading_order)
+    return neighbors
+
+
+def expand_neighbors(chunks: list[dict]) -> list[dict]:
+    """Merge page-adjacent chunk text into each reranked winner (small-to-big).
+
+    Retrieval and reranking stay chunk-precise; the context block grows to
+    section level. Each neighbor is claimed by the first winner that reaches
+    it — and winners never absorb each other — so no text appears twice.
+    """
+    collection = get_collection()
+    by_file: dict[str, list[dict]] = {}
+    for filename in {c["filename"] for c in chunks}:
+        result = collection.get(where={"filename": filename}, include=["documents", "metadatas"])
+        by_file[filename] = [
+            {"id": cid, "text": text, **meta}
+            for cid, text, meta in zip(result["ids"], result["documents"], result["metadatas"])
+        ]
+
+    used = {c["id"] for c in chunks}
+    expanded = []
+    for chunk in chunks:
+        neighbors = [
+            n for n in select_neighbors(chunk, by_file.get(chunk["filename"], []))
+            if n["id"] not in used
+        ]
+        merged = dict(chunk)
+        if neighbors:
+            used.update(n["id"] for n in neighbors)
+            parts = sorted(neighbors + [chunk], key=_reading_order)
+            merged["text"] = "\n\n".join(p["text"] for p in parts)
+            merged["page_start"] = min(_chunk_range(p)[0] for p in parts)
+            merged["page_end"] = max(_chunk_range(p)[1] for p in parts)
+        expanded.append(merged)
+    return expanded
 
 
 def apply_stub_penalty(chunks: list[dict]) -> list[dict]:

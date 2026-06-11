@@ -22,6 +22,7 @@ TOP_K_RERANK = 8          # final chunks sent to Claude
 RRF_K = 60                # RRF constant
 RERANK_THRESHOLD = 0.0    # minimum cross-encoder score (0.0 = no filter)
 STUB_RRF_MULTIPLIER = 0.3 # stub chunks' RRF scores are scaled down by this factor
+NEIGHBOR_PAGE_WINDOW = 1  # pages on each side merged into reranked winners (small-to-big)
 ENTAILMENT_THRESHOLD = 0.5  # minimum entailment probability to consider a citation verified
 
 EMBED_PROVIDER = "ollama"   # "ollama" | "openai"
