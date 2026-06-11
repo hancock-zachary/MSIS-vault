@@ -28,6 +28,25 @@ def test_extract_pages_pdf(sample_pdf):
     assert pages[0]["filename"] == sample_pdf.name
 
 
+def test_extract_pages_pdf_outline_titles_are_strings_on_correct_pages(tmp_path):
+    # get_toc() entries are [level, title, 1-based page]. The extractor must
+    # attach the title string (not the int level) to the right page.
+    import fitz
+    pdf_path = tmp_path / "outlined.pdf"
+    doc = fitz.open()
+    for i in range(3):
+        page = doc.new_page()
+        page.insert_text((72, 72), f"Dense content for page {i + 1} about database design.")
+    doc.set_toc([[1, "Introduction", 1], [1, "Methods", 3]])
+    doc.save(str(pdf_path))
+    doc.close()
+
+    pages = extract_pages(pdf_path, course="IS 6410")
+    assert pages[0]["slide_title"] == "Introduction"
+    assert pages[1]["slide_title"] == ""
+    assert pages[2]["slide_title"] == "Methods"
+
+
 def test_extract_pages_txt(tmp_path):
     txt_file = tmp_path / "notes.txt"
     txt_file.write_text("This is a plain text note about project management.", encoding="utf-8")

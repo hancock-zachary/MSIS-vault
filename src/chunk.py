@@ -29,15 +29,19 @@ def _extract_pages_pdf(pdf_path: Path, course: str) -> list[dict]:
                 "course": course,
                 "filename": pdf_path.name,
                 "page": i + 1,
-                "slide_title": outline.get(i, ""),
+                "slide_title": outline.get(i + 1, ""),  # outline keys are 1-based pages
                 "text": text,
             })
     return pages
 
 
 def _extract_outline(doc) -> list[tuple]:
+    """Return (title, page) tuples from the PDF table of contents.
+
+    get_toc() entries are [level, title, page] with 1-based page numbers.
+    """
     try:
-        return [(entry[0], entry[2]) for entry in doc.get_toc()]
+        return [(entry[1], entry[2]) for entry in doc.get_toc()]
     except Exception:
         return []
 
