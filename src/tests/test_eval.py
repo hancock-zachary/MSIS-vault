@@ -151,6 +151,17 @@ def test_parse_generated_question_empty_returns_none():
     assert parse_generated_question("   \n  ") is None
 
 
+def test_parse_generated_question_rejects_refusals():
+    raw = ("I can't generate a meaningful exam question from this passage. "
+           "The text provided only contains a heading.")
+    assert parse_generated_question(raw) is None
+
+
+def test_parse_generated_question_skips_preamble_lines():
+    raw = "Here is a study question based on the passage:\nWhat is an ERD?"
+    assert parse_generated_question(raw) == "What is an ERD?"
+
+
 # ---------------------------------------------------------------------------
 # Chunk sampling for question generation
 # ---------------------------------------------------------------------------

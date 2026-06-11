@@ -112,15 +112,20 @@ def make_snippet(text: str, length: int = EVAL_SNIPPET_CHARS) -> str:
 
 
 def parse_generated_question(raw: str) -> str | None:
-    """Extract the question from claude output: first non-empty line,
-    stripped of list numbering and surrounding quotes."""
+    """Extract the question from claude output: the first line containing a
+    question mark, stripped of list numbering and surrounding quotes.
+
+    Requiring "?" rejects model refusals ("I can't generate a question from
+    this passage...") and skips preamble lines ("Here is a question:") —
+    both otherwise end up as junk entries in the question set."""
     for line in raw.splitlines():
         line = line.strip()
-        if not line:
+        if not line or "?" not in line:
             continue
         line = re.sub(r"^(\d+\.\s*|[-*]\s+|Q:\s*)", "", line).strip()
         line = line.strip('"“”').strip()
-        return line or None
+        if line:
+            return line
     return None
 
 
