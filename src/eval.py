@@ -177,7 +177,9 @@ def _ask_claude_for_question(chunk_text: str) -> str | None:
             time.sleep(_RETRY_BASE_DELAY_SECONDS * attempt)
         try:
             result = subprocess.run(
-                ["claude", "-p", prompt],
+                # Haiku: question generation is simple, and the cheap fast
+                # model makes 50-call bursts less likely to hit rate limits.
+                ["claude", "-p", prompt, "--model", "haiku"],
                 capture_output=True, text=True, timeout=60,
             )
         except subprocess.TimeoutExpired:

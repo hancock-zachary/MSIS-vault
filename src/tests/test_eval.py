@@ -29,6 +29,17 @@ def test_ask_claude_retries_transient_failures():
     mock_sleep.assert_called()
 
 
+def test_ask_claude_generates_with_haiku_model():
+    # Question generation is a simple task — pin the cheap, fast model so
+    # 50-call bursts cost less and are less likely to hit rate limits.
+    with patch("src.eval.subprocess.run") as mock_run:
+        mock_run.return_value = _proc(stdout="What is an ERD?\n")
+        _ask_claude_for_question("chunk text")
+    cmd = mock_run.call_args.args[0]
+    assert "--model" in cmd
+    assert cmd[cmd.index("--model") + 1] == "haiku"
+
+
 def test_ask_claude_reports_reason_after_all_attempts_fail(capsys):
     with patch("src.eval.subprocess.run") as mock_run, \
          patch("src.eval.time.sleep"):
