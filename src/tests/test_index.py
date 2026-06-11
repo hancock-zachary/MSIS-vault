@@ -1,8 +1,43 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from src.index import (
-    upsert_chunks, query_dense, build_bm25, query_bm25, load_bm25, tokenize
+    upsert_chunks, query_dense, build_bm25, query_bm25, load_bm25, tokenize,
+    rebuild_bm25_from_collection,
 )
+
+
+def test_rebuild_bm25_from_collection(tmp_path):
+    col = MagicMock()
+    col.get.return_value = {
+        "ids": ["c1", "c2", "c3"],
+        "documents": [
+            "An ERD models data entities.",
+            "Supply chain logistics overview.",
+            "Normalization reduces redundancy.",
+        ],
+        "metadatas": [
+            {"filename": "a.pdf", "page": 1},
+            {"filename": "b.pdf", "page": 2},
+            {"filename": "c.pdf", "page": 3},
+        ],
+    }
+    path = tmp_path / "bm25.pkl"
+    count = rebuild_bm25_from_collection(col, path)
+    assert count == 3
+    index, corpus, chunks = load_bm25(path)
+    results = query_bm25(index, corpus, chunks, "normalization", top_k=5)
+    assert results[0]["id"] == "c3"
+    assert results[0]["filename"] == "c.pdf"
+
+
+def test_rebuild_bm25_from_empty_collection_removes_stale_pickle(tmp_path):
+    col = MagicMock()
+    col.get.return_value = {"ids": [], "documents": [], "metadatas": []}
+    path = tmp_path / "bm25.pkl"
+    path.write_bytes(b"stale")
+    count = rebuild_bm25_from_collection(col, path)
+    assert count == 0
+    assert not path.exists()
 
 
 def test_tokenize_strips_punctuation():

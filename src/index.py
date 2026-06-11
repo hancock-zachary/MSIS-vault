@@ -65,6 +65,26 @@ def build_bm25(chunks: list[dict], bm25_path: Path):
     return index, tokenized
 
 
+def rebuild_bm25_from_collection(collection, bm25_path: Path) -> int:
+    """Rebuild the BM25 index from ChromaDB contents. Returns chunk count.
+
+    Chroma is the single source of truth; the BM25 pickle is a derived cache
+    regenerated on every ingest run, so the two stores can never drift (e.g.
+    a crash mid-ingest, or purges that previously had to update both by hand).
+    """
+    result = collection.get(include=["documents", "metadatas"])
+    chunks = [
+        {"id": cid, "text": text, **meta}
+        for cid, text, meta in zip(result["ids"], result["documents"], result["metadatas"])
+    ]
+    if not chunks:
+        if bm25_path.exists():
+            bm25_path.unlink()
+        return 0
+    build_bm25(chunks, bm25_path)
+    return len(chunks)
+
+
 def load_bm25(bm25_path: Path):
     # bm25.pkl is written by this codebase only — trust boundary is local filesystem
     with open(bm25_path, "rb") as f:

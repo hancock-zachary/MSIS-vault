@@ -3,7 +3,7 @@ from pathlib import Path
 from src.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
 from src.chunk import build_chunks_from_file, enrich_for_embedding, is_quality_text
 from src.embed import embed_batch
-from src.index import get_collection, upsert_chunks, build_bm25, load_bm25
+from src.index import get_collection, upsert_chunks, rebuild_bm25_from_collection
 
 
 def load_log(log_path: Path) -> dict:
@@ -35,14 +35,6 @@ def purge_deleted_files(log: dict, log_path: Path):
     log_path.write_text(json.dumps(log, indent=2))
     print(f"Purged {len(missing)} deleted file(s) from index.")
 
-    # Rebuild BM25 without the deleted files' chunks
-    if BM25_PATH.exists():
-        _, _, existing_chunks = load_bm25(BM25_PATH)
-        deleted_filenames = {Path(p).name for p in missing}
-        surviving_chunks = [c for c in existing_chunks if c.get("filename") not in deleted_filenames]
-        build_bm25(surviving_chunks, BM25_PATH)
-        print(f"  BM25 rebuilt with {len(surviving_chunks)} remaining chunks.")
-
 
 def find_unindexed_files(root: Path, log: dict) -> list[Path]:
     return [
@@ -68,17 +60,9 @@ def run_ingestion():
     files = find_unindexed_files(RAW_DIR, log)
     if not files:
         print("Nothing to index.")
-        return
 
     collection = get_collection()
 
-    # Load existing BM25 chunks to append to
-    if BM25_PATH.exists():
-        _, _, existing_chunks = load_bm25(BM25_PATH)  # (index, tokenized_corpus, chunks)
-    else:
-        existing_chunks = []
-
-    all_new_chunks = []
     for file_path in files:
         course = _course_from_path(file_path)
         print(f"Indexing {file_path.name} ({course})...")
@@ -100,12 +84,13 @@ def run_ingestion():
             continue
         vectors = embed_batch([enrich_for_embedding(c) for c in chunks])
         upsert_chunks(collection, chunks, vectors)
-        all_new_chunks.extend(chunks)
         log_indexed(log, file_path, INGESTION_LOG)
         print(f"  {len(chunks)} chunks indexed.")
 
-    build_bm25(existing_chunks + all_new_chunks, BM25_PATH)
-    print(f"Done. BM25 index rebuilt with {len(existing_chunks) + len(all_new_chunks)} total chunks.")
+    # Always rebuild BM25 from ChromaDB — the single source of truth — so the
+    # two stores stay consistent even after purges, crashes, or no-op runs.
+    total = rebuild_bm25_from_collection(collection, BM25_PATH)
+    print(f"Done. BM25 index rebuilt from ChromaDB with {total} total chunks.")
 
 
 if __name__ == "__main__":

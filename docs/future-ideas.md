@@ -141,11 +141,6 @@ answering them — forces retrieval practice rather than passive review.
 
 ## Priority 6 — Infrastructure and engineering hygiene
 
-### Single Source of Truth for BM25
-The BM25 pickle stores its own copy of every chunk, parallel to ChromaDB, and the two
-can drift — purge logic in `ingest.py` has to maintain both stores by hand. Rebuild
-BM25 from Chroma's contents on each ingest instead, eliminating the drift risk.
-
 ### Multi-Vault / Multi-User Support
 Extend the system to support multiple students sharing a knowledge base, or separate
 vaults per semester.
@@ -161,6 +156,9 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Single Source of Truth for BM25~~ ✅ (BM25 pickle is now a derived cache rebuilt
+  from ChromaDB at the end of every ingest run — crashes and purges can no longer
+  leave the two stores out of sync)
 - ~~Stub Down-weighting in Retrieval~~ ✅ (RRF scores of stubs scaled by
   `STUB_RRF_MULTIPLIER`; reranker always orders stubs after content chunks)
 - ~~Better BM25 Tokenization~~ ✅ (punctuation-splitting + conservative stopword list,
