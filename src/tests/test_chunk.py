@@ -131,6 +131,15 @@ def test_chunk_slides_id_uses_first_page():
     assert chunks[0]["page"] == 1
 
 
+def test_chunk_slides_sets_page_range():
+    pages = [_make_page(page=i, text=f"slide {i}") for i in range(1, 7)]
+    chunks = chunk_slides(pages)
+    assert chunks[0]["page_start"] == 1
+    assert chunks[0]["page_end"] == 4
+    assert chunks[1]["page_start"] == 5
+    assert chunks[1]["page_end"] == 6
+
+
 def test_chunk_slides_handles_remainder():
     pages = [_make_page(page=i, text=f"slide {i}") for i in range(1, 7)]
     chunks = chunk_slides(pages)

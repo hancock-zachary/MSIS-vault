@@ -1,5 +1,4 @@
 import re
-from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
 import numpy as np
@@ -76,16 +75,24 @@ def verify_claims(claims: list[VerifiedClaim], chunks: list[dict]) -> list[Verif
     This is meaningfully different from relevance scoring — a passage can be
     relevant to a topic while not actually supporting a specific factual claim.
     """
-    page_texts: dict[tuple, list[str]] = defaultdict(list)
-    for c in chunks:
-        key = (c.get("filename", ""), c.get("page", 0))
-        page_texts[key].append(c["text"])
-    chunk_map = {k: " ".join(v) for k, v in page_texts.items()}
+    # Slide chunks span a page range (page_start..page_end) but are keyed at
+    # the first page; a citation to any page in the range must match. Chunks
+    # without range metadata fall back to exact-page matching.
+    def _texts_for(filename: str, page: int) -> str:
+        texts = []
+        for c in chunks:
+            if c.get("filename", "") != filename:
+                continue
+            start = c.get("page_start", c.get("page", 0))
+            end = c.get("page_end", c.get("page", 0))
+            if start <= page <= end:
+                texts.append(c["text"])
+        return " ".join(texts)
 
     for claim in claims:
         if claim.filename is None:
             continue
-        chunk_text = chunk_map.get((claim.filename, claim.page))
+        chunk_text = _texts_for(claim.filename, claim.page)
         if not chunk_text:
             claim.verified = False
             continue

@@ -8,13 +8,6 @@ expanding coverage.
 
 ## Priority 1 — Correctness and retrieval-quality fixes (high impact, low effort)
 
-### Page Ranges for Slide Chunks
-`chunk_slides()` groups 4 pages into one chunk but stores only the *first* page number.
-`verify.py` looks up cited chunks by exact `(filename, page)` match, so a claim citing
-page 3 of a group keyed at page 1 fails the lookup and gets marked "unverified" even
-when correct. Store `page_start`/`page_end` metadata and match within the range —
-fixes both entailment verification and citation precision.
-
 ### Contextual Chunk Enrichment
 Prepend a small context header (`<course> · <filename> · <slide title>`) to each
 chunk's text before embedding, so a chunk that says "the three phases are..." carries
@@ -185,3 +178,6 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Page Ranges for Slide Chunks~~ ✅ (slide chunks store `page_start`/`page_end`,
+  verify.py matches citations within the range, query.py shows "pages X-Y"; chunks
+  indexed before the re-index lack range metadata and fall back to exact-page match)

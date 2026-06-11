@@ -11,6 +11,25 @@ from src.rerank import rerank_chunks
 from src.config import TOP_K_RERANK
 
 
+def format_context(question: str, chunks: list[dict]) -> str:
+    """Format reranked chunks as a context block for Claude.
+
+    Slide chunks carry a page range (page_start..page_end); showing the full
+    range lets Claude cite any page in it, which verify.py will accept.
+    """
+    lines = [f"# Retrieved context for: {question}\n"]
+    for i, chunk in enumerate(chunks, 1):
+        start = chunk.get("page_start", chunk.get("page", "?"))
+        end = chunk.get("page_end", chunk.get("page", "?"))
+        page_label = f"pages {start}-{end}" if start != end else f"page {start}"
+        lines.append(
+            f"## [{i}] {chunk.get('filename', 'unknown')}, {page_label} "
+            f"(course: {chunk.get('course', '?')})\n"
+            f"{chunk.get('text', '')}\n"
+        )
+    return "\n".join(lines)
+
+
 def run_query(question: str) -> str:
     print(f"[src] Rewriting query...", file=sys.stderr)
     variants = rewrite_query(question)
@@ -27,14 +46,7 @@ def run_query(question: str) -> str:
     top_chunks = rerank_chunks(question, candidates, top_k=TOP_K_RERANK)
     print(f"[src] {len(top_chunks)} chunks after reranking.", file=sys.stderr)
 
-    lines = [f"# Retrieved context for: {question}\n"]
-    for i, chunk in enumerate(top_chunks, 1):
-        lines.append(
-            f"## [{i}] {chunk.get('filename', 'unknown')}, page {chunk.get('page', '?')} "
-            f"(course: {chunk.get('course', '?')})\n"
-            f"{chunk.get('text', '')}\n"
-        )
-    return "\n".join(lines)
+    return format_context(question, top_chunks)
 
 
 if __name__ == "__main__":

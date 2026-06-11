@@ -219,6 +219,8 @@ def chunk_slides(pages: list[dict]) -> list[dict]:
             "course": first["course"],
             "filename": first["filename"],
             "page": first["page"],
+            "page_start": first["page"],
+            "page_end": group[-1]["page"],
             "slide_title": first["slide_title"],
             "chunk_index": group_idx,
             "text": combined_text,

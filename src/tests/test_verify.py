@@ -68,6 +68,36 @@ def test_verify_claims_flags_contradicted_claim_unverified():
     assert result[0].verified is False
 
 
+def test_verify_claims_matches_page_within_slide_range():
+    # Slide chunks span several pages but are keyed at the first page.
+    # A citation to any page inside the range must still find the chunk.
+    claims = [VerifiedClaim("The Scrum Master removes impediments", "scrum.pdf", 3, None, False)]
+    chunks = [{
+        "filename": "scrum.pdf", "page": 1, "page_start": 1, "page_end": 4,
+        "text": "The Scrum Master removes impediments for the team.",
+    }]
+
+    mock_model = MagicMock()
+    mock_model.predict.return_value = np.array([[0.05, 0.90, 0.05]])
+    mock_model.model.config.id2label = {0: "contradiction", 1: "entailment", 2: "neutral"}
+
+    with patch("src.verify._get_nli_model", return_value=(mock_model, 1)):
+        result = verify_claims(claims, chunks)
+
+    assert result[0].verified is True
+
+
+def test_verify_claims_rejects_page_outside_slide_range():
+    claims = [VerifiedClaim("A claim", "scrum.pdf", 7, None, False)]
+    chunks = [{
+        "filename": "scrum.pdf", "page": 1, "page_start": 1, "page_end": 4,
+        "text": "irrelevant",
+    }]
+    with patch("src.verify._get_nli_model"):
+        result = verify_claims(claims, chunks)
+    assert result[0].verified is False
+
+
 def test_verify_claims_skips_uncited_claims():
     claims = [VerifiedClaim("Some uncited claim", None, None, None, False)]
     result = verify_claims(claims, [])
