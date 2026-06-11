@@ -20,8 +20,13 @@ src/ingestion_log.json
 src/__pycache__/
 src/tests/__pycache__/
 
+# Ad hoc scripts
+scripts/
+
 # Eval data contains excerpts of copyrighted course material (gold snippets)
-eval/
+eval/results
+eval/baseline.json
+eval/questions.json
 
 # Hide actual documents from being uploaded to GitHub
 docs/study-guides/
