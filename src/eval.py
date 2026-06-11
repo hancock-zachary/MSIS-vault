@@ -27,6 +27,7 @@ import random
 import re
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime
 
@@ -158,18 +159,39 @@ def sample_eval_chunks(
 # generate subcommand
 # ---------------------------------------------------------------------------
 
+_GENERATE_ATTEMPTS = 3
+_RETRY_BASE_DELAY_SECONDS = 5
+
+
 def _ask_claude_for_question(chunk_text: str) -> str | None:
+    """Generate one question via `claude -p`, retrying transient failures.
+
+    Burst CLI calls can hit rate limits partway through a run; a short
+    backoff usually recovers. The last failure reason is printed so a
+    permanent problem (auth, usage cap) is visible instead of silent.
+    """
     prompt = GENERATE_PROMPT.format(text=chunk_text)
-    try:
-        result = subprocess.run(
-            ["claude", "-p", prompt],
-            capture_output=True, text=True, timeout=60,
-        )
-    except subprocess.TimeoutExpired:
-        return None
-    if result.returncode != 0 or not result.stdout.strip():
-        return None
-    return parse_generated_question(result.stdout)
+    last_reason = ""
+    for attempt in range(_GENERATE_ATTEMPTS):
+        if attempt:
+            time.sleep(_RETRY_BASE_DELAY_SECONDS * attempt)
+        try:
+            result = subprocess.run(
+                ["claude", "-p", prompt],
+                capture_output=True, text=True, timeout=60,
+            )
+        except subprocess.TimeoutExpired:
+            last_reason = "timed out after 60s"
+            continue
+        if result.returncode != 0:
+            last_reason = (result.stderr or "").strip() or f"exit code {result.returncode}"
+            continue
+        question = parse_generated_question(result.stdout)
+        if question:
+            return question
+        last_reason = "empty or unparseable output"
+    print(f"    last failure: {last_reason}", file=sys.stderr)
+    return None
 
 
 def generate_questions(n: int, force: bool) -> None:

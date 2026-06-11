@@ -1,4 +1,7 @@
+from unittest.mock import MagicMock, patch
+
 from src.eval import (
+    _ask_claude_for_question,
     evaluate_ranking,
     make_snippet,
     mean_reciprocal_rank,
@@ -6,6 +9,34 @@ from src.eval import (
     recall_at_k,
     sample_eval_chunks,
 )
+
+
+def _proc(returncode=0, stdout="", stderr=""):
+    return MagicMock(returncode=returncode, stdout=stdout, stderr=stderr)
+
+
+def test_ask_claude_retries_transient_failures():
+    # First call fails (e.g. rate limit), second succeeds — must not give up.
+    with patch("src.eval.subprocess.run") as mock_run, \
+         patch("src.eval.time.sleep") as mock_sleep:
+        mock_run.side_effect = [
+            _proc(returncode=1, stderr="rate limit exceeded"),
+            _proc(stdout="What is an ERD?\n"),
+        ]
+        result = _ask_claude_for_question("chunk text")
+    assert result == "What is an ERD?"
+    assert mock_run.call_count == 2
+    mock_sleep.assert_called()
+
+
+def test_ask_claude_reports_reason_after_all_attempts_fail(capsys):
+    with patch("src.eval.subprocess.run") as mock_run, \
+         patch("src.eval.time.sleep"):
+        mock_run.return_value = _proc(returncode=1, stderr="rate limit exceeded")
+        result = _ask_claude_for_question("chunk text")
+    assert result is None
+    assert mock_run.call_count == 3
+    assert "rate limit exceeded" in capsys.readouterr().err
 
 
 def _chunk(filename="a.pdf", text="some chunk text here", course="IS 6410", is_stub=False):
