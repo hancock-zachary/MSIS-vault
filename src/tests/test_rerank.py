@@ -26,6 +26,20 @@ def test_rerank_orders_by_score(sample_chunks):
     assert results[0]["rerank_score"] >= results[1]["rerank_score"]
 
 
+def test_rerank_places_stubs_after_content_chunks(sample_chunks):
+    # Stubs are salvaged titles — keyword-dense, so the cross-encoder can
+    # score them highly. They must never outrank real content chunks.
+    stub = {**sample_chunks[0], "id": "stub", "text": "Entity Relationship Diagrams", "is_stub": True}
+    real = {**sample_chunks[0], "id": "real", "text": "An ERD models data entities.", "is_stub": False}
+    with patch("src.rerank._get_model") as mock_model:
+        mock_ce = MagicMock()
+        mock_ce.predict.return_value = [9.0, 2.0]  # stub scores higher
+        mock_model.return_value = mock_ce
+        results = rerank_chunks("what is an ERD?", [stub, real], top_k=2)
+    assert results[0]["id"] == "real"
+    assert results[1]["id"] == "stub"
+
+
 def test_rerank_does_not_mutate_input(sample_chunks):
     with patch("src.rerank._get_model") as mock_model:
         mock_ce = MagicMock()

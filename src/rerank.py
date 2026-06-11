@@ -17,5 +17,8 @@ def rerank_chunks(query: str, chunks: list[dict], top_k: int = TOP_K_RERANK) -> 
     scores = np.atleast_1d(scores)  # handle scalar return from model.predict
     for chunk, score in zip(chunks, scores):
         chunk["rerank_score"] = float(score)
-    ranked = sorted(chunks, key=lambda c: c["rerank_score"], reverse=True)
+    # Stubs sort after all content chunks regardless of score — the
+    # cross-encoder rates keyword-dense titles highly, but stubs only
+    # signal topic presence and must never displace citable content.
+    ranked = sorted(chunks, key=lambda c: (bool(c.get("is_stub")), -c["rerank_score"]))
     return ranked[:top_k]

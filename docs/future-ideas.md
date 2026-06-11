@@ -8,11 +8,7 @@ expanding coverage.
 
 ## Priority 1 — Correctness and retrieval-quality fixes (high impact, low effort)
 
-### Stub Down-weighting in Retrieval
-Stub chunks (salvaged titles from garbled image pages) are indexed like normal chunks.
-Being short and keyword-dense, BM25 can rank them highly, wasting top-K slots on
-content that must not be cited as factual. Filter or penalize `is_stub` chunks during
-retrieval/reranking so they only surface when nothing better exists.
+_All complete — see Done section._
 
 ---
 
@@ -165,6 +161,8 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Stub Down-weighting in Retrieval~~ ✅ (RRF scores of stubs scaled by
+  `STUB_RRF_MULTIPLIER`; reranker always orders stubs after content chunks)
 - ~~Better BM25 Tokenization~~ ✅ (punctuation-splitting + conservative stopword list,
   applied identically at index and query time; takes effect on BM25 rebuild)
 - ~~Contextual Chunk Enrichment~~ ✅ (course · document · slide-title header prepended

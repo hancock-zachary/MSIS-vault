@@ -1,7 +1,24 @@
 from collections import defaultdict
-from src.config import RRF_K, TOP_K_RETRIEVAL, BM25_PATH
+from src.config import RRF_K, STUB_RRF_MULTIPLIER, TOP_K_RETRIEVAL, BM25_PATH
 from src.embed import embed_text
 from src.index import get_collection, query_dense, load_bm25, query_bm25
+
+
+def apply_stub_penalty(chunks: list[dict]) -> list[dict]:
+    """Scale down RRF scores of stub chunks and re-sort.
+
+    Stubs (salvaged titles from garbled pages) are short and keyword-dense,
+    so BM25 in particular can rank them highly. They signal topic presence
+    but must not crowd real content out of the candidate pool.
+    """
+    result = []
+    for c in chunks:
+        c = dict(c)
+        if c.get("is_stub"):
+            c["rrf_score"] = c["rrf_score"] * STUB_RRF_MULTIPLIER
+        result.append(c)
+    result.sort(key=lambda c: c["rrf_score"], reverse=True)
+    return result
 
 
 def reciprocal_rank_fusion(ranked_lists: list[list[dict]]) -> list[dict]:
@@ -86,4 +103,4 @@ def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL) -> 
             all_ranked_lists.append(sparse_results)
 
     fused = reciprocal_rank_fusion(all_ranked_lists)
-    return deduplicate_by_id(fused)
+    return apply_stub_penalty(deduplicate_by_id(fused))

@@ -1,4 +1,27 @@
-from src.retrieve import reciprocal_rank_fusion, deduplicate_by_id
+import pytest
+from src.config import STUB_RRF_MULTIPLIER
+from src.retrieve import apply_stub_penalty, reciprocal_rank_fusion, deduplicate_by_id
+
+
+def test_apply_stub_penalty_demotes_stubs():
+    chunks = [
+        {"id": "stub", "is_stub": True, "rrf_score": 0.05},
+        {"id": "real", "is_stub": False, "rrf_score": 0.04},
+    ]
+    result = apply_stub_penalty(chunks)
+    assert [c["id"] for c in result] == ["real", "stub"]
+    assert result[1]["rrf_score"] == pytest.approx(0.05 * STUB_RRF_MULTIPLIER)
+
+
+def test_apply_stub_penalty_leaves_non_stubs_untouched():
+    chunks = [
+        {"id": "a", "is_stub": False, "rrf_score": 0.05},
+        {"id": "b", "rrf_score": 0.04},  # missing is_stub treated as non-stub
+    ]
+    result = apply_stub_penalty(chunks)
+    assert [c["id"] for c in result] == ["a", "b"]
+    assert result[0]["rrf_score"] == pytest.approx(0.05)
+    assert result[1]["rrf_score"] == pytest.approx(0.04)
 
 
 def test_rrf_higher_ranked_gets_higher_score():
