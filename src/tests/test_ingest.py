@@ -1,6 +1,9 @@
 import json
 from unittest.mock import patch, MagicMock
-from src.ingest import find_unindexed_files, log_indexed, load_log, _course_from_path
+from src.ingest import (
+    find_unindexed_files, log_indexed, load_log, _course_from_path,
+    _source_type_from_path,
+)
 from src.chunk import is_quality_text
 from src.config import RAW_DIR
 
@@ -50,6 +53,44 @@ def test_course_from_path_direct_file_is_general(tmp_path):
     ingest_mod.RAW_DIR = tmp_path
     assert _course_from_path(f) == "General"
     ingest_mod.RAW_DIR = original
+
+def test_source_type_from_path_maps_known_subfolders(tmp_path):
+    import src.ingest as ingest_mod
+    cases = {
+        "slides": "slides",
+        "readings": "reading",
+        "transcripts": "transcript",
+        "Assignments": "assignment",
+        "additional_files": "unknown",
+    }
+    original = ingest_mod.RAW_DIR
+    ingest_mod.RAW_DIR = tmp_path
+    try:
+        for folder, expected in cases.items():
+            d = tmp_path / "IS 6410" / folder
+            d.mkdir(parents=True, exist_ok=True)
+            f = d / "x.pdf"
+            f.touch()
+            assert _source_type_from_path(f) == expected, folder
+    finally:
+        ingest_mod.RAW_DIR = original
+
+
+def test_source_type_from_path_no_subfolder_is_unknown(tmp_path):
+    import src.ingest as ingest_mod
+    original = ingest_mod.RAW_DIR
+    ingest_mod.RAW_DIR = tmp_path
+    try:
+        (tmp_path / "IS 6410").mkdir()
+        f = tmp_path / "IS 6410" / "x.pdf"
+        f.touch()
+        assert _source_type_from_path(f) == "unknown"
+        g = tmp_path / "loose.pdf"
+        g.touch()
+        assert _source_type_from_path(g) == "unknown"
+    finally:
+        ingest_mod.RAW_DIR = original
+
 
 def test_is_quality_text_imported_correctly():
     assert callable(is_quality_text)

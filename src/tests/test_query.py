@@ -28,6 +28,20 @@ def test_format_context_shows_single_page():
     assert "ERD content" in output
 
 
+def test_format_context_shows_source_type():
+    chunks = [{"filename": "week3.pdf", "page": 5, "course": "IS 6410",
+               "source_type": "slides", "text": "ERD content"}]
+    output = format_context("question", chunks)
+    assert "course: IS 6410 · slides" in output
+
+
+def test_format_context_hides_unknown_source_type():
+    chunks = [{"filename": "week3.pdf", "page": 5, "course": "IS 6410",
+               "source_type": "unknown", "text": "ERD content"}]
+    output = format_context("question", chunks)
+    assert "unknown" not in output
+
+
 def test_format_context_shows_page_range_for_slide_chunks():
     chunks = [{
         "filename": "deck.pdf", "page": 1, "page_start": 1, "page_end": 4,

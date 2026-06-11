@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
-from src.config import RAW_DIR, INGESTION_LOG, BM25_PATH, SUPPORTED_EXTENSIONS
+from src.config import (
+    RAW_DIR, INGESTION_LOG, BM25_PATH, SOURCE_TYPE_KEYWORDS, SUPPORTED_EXTENSIONS,
+)
 from src.chunk import build_chunks_from_file, enrich_for_embedding, is_quality_text
 from src.embed import embed_batch
 from src.index import get_collection, upsert_chunks, rebuild_bm25_from_collection
@@ -54,6 +56,23 @@ def _course_from_path(file_path: Path) -> str:
     return parts[0] if len(parts) > 1 else "General"
 
 
+def _source_type_from_path(file_path: Path) -> str:
+    """Infer document authority tier from the subfolder under raw/<Course>/.
+
+    raw/IS 6410/slides/week1.pdf      →  "slides"
+    raw/IS 6410/transcripts/t1.txt    →  "transcript"
+    raw/IS 6410/week1.pdf             →  "unknown"  (no type subfolder)
+    """
+    parts = file_path.relative_to(RAW_DIR).parts
+    if len(parts) < 3:
+        return "unknown"
+    folder = parts[1].lower()
+    for keyword, source_type in SOURCE_TYPE_KEYWORDS.items():
+        if keyword in folder:
+            return source_type
+    return "unknown"
+
+
 def run_ingestion():
     log = load_log(INGESTION_LOG)
     purge_deleted_files(log, INGESTION_LOG)
@@ -82,6 +101,9 @@ def run_ingestion():
         if not chunks:
             print(f"  WARNING: all chunks were garbled in {file_path.name}, skipping.")
             continue
+        source_type = _source_type_from_path(file_path)
+        for c in chunks:
+            c["source_type"] = source_type
         vectors = embed_batch([enrich_for_embedding(c) for c in chunks])
         upsert_chunks(collection, chunks, vectors)
         log_indexed(log, file_path, INGESTION_LOG)

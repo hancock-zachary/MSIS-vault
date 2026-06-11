@@ -42,9 +42,13 @@ def format_context(question: str, chunks: list[dict]) -> str:
         start = chunk.get("page_start", chunk.get("page", "?"))
         end = chunk.get("page_end", chunk.get("page", "?"))
         page_label = f"pages {start}-{end}" if start != end else f"page {start}"
+        course_label = chunk.get("course", "?")
+        source_type = chunk.get("source_type", "")
+        if source_type and source_type != "unknown":
+            course_label += f" · {source_type}"
         lines.append(
             f"## [{i}] {chunk.get('filename', 'unknown')}, {page_label} "
-            f"(course: {chunk.get('course', '?')})\n"
+            f"(course: {course_label})\n"
             f"{chunk.get('text', '')}\n"
         )
     return "\n".join(lines)

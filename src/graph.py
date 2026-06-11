@@ -150,6 +150,7 @@ def _write_page(
     chunk_count: int,
     related: list[dict],
     excerpts: list[str],
+    source_type: str = "unknown",
 ) -> None:
     today = date.today().isoformat()
     title = _note_title(filename)
@@ -158,6 +159,7 @@ def _write_page(
     frontmatter = textwrap.dedent(f"""\
         ---
         course: {course}
+        source_type: {source_type}
         chunks: {chunk_count}
         updated: {today}
         tags: [{course.replace(" ", "-")}, indexed]
@@ -314,6 +316,7 @@ def run_graph():
         doc_meta[filename] = {
             "chunk_count": len(meta_result["ids"]),
             "course": meta_result["metadatas"][0].get("course", "Unknown"),
+            "source_type": meta_result["metadatas"][0].get("source_type", "unknown"),
         }
         all_candidates[filename] = _find_candidates(collection, filename)
 
@@ -358,7 +361,8 @@ def run_graph():
         course_dir = WIKI_DIR / course
         course_dir.mkdir(exist_ok=True)
         page_path = course_dir / f"{_note_title(filename)}.md"
-        _write_page(page_path, filename, course, chunk_count, related, excerpts)
+        _write_page(page_path, filename, course, chunk_count, related, excerpts,
+                    source_type=meta.get("source_type", "unknown"))
 
         # collect preview for index (first sentence of first excerpt)
         preview = _first_sentence(excerpts[0]) if excerpts else ""

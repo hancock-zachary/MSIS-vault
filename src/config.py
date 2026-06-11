@@ -23,6 +23,27 @@ RRF_K = 60                # RRF constant
 RERANK_THRESHOLD = 0.0    # minimum cross-encoder score (0.0 = no filter)
 STUB_RRF_MULTIPLIER = 0.3 # stub chunks' RRF scores are scaled down by this factor
 NEIGHBOR_PAGE_WINDOW = 1  # pages on each side merged into reranked winners (small-to-big)
+
+# Document trust: subfolder-name keyword (under raw/<Course>/) → canonical source type
+SOURCE_TYPE_KEYWORDS = {
+    "slide": "slides", "lecture": "slides", "deck": "slides",
+    "reading": "reading", "textbook": "reading", "article": "reading",
+    "transcript": "transcript",
+    "assignment": "assignment", "homework": "assignment", "exam": "assignment",
+    "quiz": "assignment", "coursework": "assignment",
+    "note": "notes",
+}
+# Additive rerank bonus per source type. Additive (not multiplicative)
+# because cross-encoder logits can be negative — a multiplier would turn
+# a penalty into a boost on negative scores. Tune against the eval harness.
+SOURCE_TYPE_RERANK_BONUS = {
+    "slides": 0.5,       # professor's primary material
+    "transcript": 0.25,  # professor's spoken material
+    "reading": 0.0,      # assigned secondary sources
+    "notes": -0.25,      # student-authored notes
+    "assignment": -1.0,  # student work — least authoritative, may contain errors
+    "unknown": 0.0,
+}
 ENTAILMENT_THRESHOLD = 0.5  # minimum entailment probability to consider a citation verified
 
 EMBED_PROVIDER = "ollama"   # "ollama" | "openai"

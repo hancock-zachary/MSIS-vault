@@ -14,22 +14,6 @@ _All complete — see Done section._
 
 ## Priority 2 — Chunking, retrieval, and graph improvements (measured against the eval harness)
 
-### Document Trust / Source Weighting
-Different document types have different levels of authority. Lecture slides from a
-professor are a primary source; assigned readings are secondary; student assignments
-and coursework are the least authoritative and most likely to contain errors.
-
-Implementation:
-1. Tag each document at ingestion time with a `source_type` metadata field
-   (e.g. `slides`, `reading`, `assignment`, `notes`), inferred from subfolder names
-   under `raw/<Course>/`
-2. Surface `source_type` in wiki page frontmatter and citations
-3. Apply a configurable score multiplier during reranking — slides get a boost,
-   assignments get a penalty (multipliers in `config.py`, tuned via the eval harness)
-
-This becomes critical when assignments and coursework enter the index — an incorrect
-answer you wrote on an exam should not be cited as a factual source.
-
 ### Smarter Wiki Excerpts
 `graph.py` currently shows the first two chunks by page number, which is usually the
 title slide and agenda. Instead pick the chunks closest to the document's embedding
@@ -138,6 +122,11 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Document Trust / Source Weighting~~ ✅ (`source_type` inferred from subfolders
+  under `raw/<Course>/` at ingest, surfaced in wiki frontmatter and query context
+  headers, and applied as an additive rerank bonus via `SOURCE_TYPE_RERANK_BONUS` —
+  additive, not the multiplier originally sketched, because cross-encoder logits can
+  be negative; bonuses inert until re-index stamps the metadata)
 - ~~Neighbor Chunk Expansion (Small-to-Big)~~ ✅ (reranked winners absorb page-adjacent
   chunk text via `NEIGHBOR_PAGE_WINDOW`; each neighbor claimed once so context never
   duplicates; page ranges widen so citations to merged pages still verify)
