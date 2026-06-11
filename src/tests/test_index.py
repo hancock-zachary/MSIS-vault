@@ -1,8 +1,52 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from src.index import (
-    upsert_chunks, query_dense, build_bm25, query_bm25, load_bm25
+    upsert_chunks, query_dense, build_bm25, query_bm25, load_bm25, tokenize
 )
+
+
+def test_tokenize_strips_punctuation():
+    assert tokenize("Systems, analysis!") == ["systems", "analysis"]
+
+
+def test_tokenize_removes_stopwords():
+    assert tokenize("the analysis of the system") == ["analysis", "system"]
+
+
+def test_tokenize_keeps_numbers_and_acronyms():
+    assert tokenize("ERD 101 covers WBS.") == ["erd", "101", "covers", "wbs"]
+
+
+def test_tokenize_splits_hyphenated_terms():
+    assert tokenize("entity-relationship") == ["entity", "relationship"]
+
+
+def test_bm25_matches_despite_punctuation(tmp_path, sample_chunks):
+    # "entities" appears as "entities." (with punctuation) in other chunks —
+    # naive whitespace tokenization would fail to match the bare query term.
+    punctuated = {
+        "id": "IS 6410_test.pdf_p4_c0",
+        "course": "IS 6410", "filename": "test.pdf", "page": 4,
+        "slide_title": "", "chunk_index": 0,
+        "text": "Cardinality constrains (entities); see: relationships, attributes.",
+    }
+    filler = {
+        "id": "IS 6410_test.pdf_p5_c0",
+        "course": "IS 6410", "filename": "test.pdf", "page": 5,
+        "slide_title": "", "chunk_index": 0,
+        "text": "Supply chain logistics and operations management overview.",
+    }
+    filler2 = {
+        "id": "IS 6410_test.pdf_p6_c0",
+        "course": "IS 6410", "filename": "test.pdf", "page": 6,
+        "slide_title": "", "chunk_index": 0,
+        "text": "Normalization reduces redundancy in database design.",
+    }
+    chunks = [punctuated, filler, filler2]
+    index, corpus = build_bm25(chunks, tmp_path / "bm25.pkl")
+    results = query_bm25(index, corpus, chunks, "cardinality", top_k=5)
+    assert len(results) >= 1
+    assert results[0]["id"] == "IS 6410_test.pdf_p4_c0"
 
 
 @pytest.fixture

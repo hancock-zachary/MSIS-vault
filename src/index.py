@@ -1,9 +1,26 @@
 import pickle
+import re
 from functools import lru_cache
 from pathlib import Path
 import chromadb
 from rank_bm25 import BM25Okapi
 from src.config import CHROMA_DIR, CHROMA_COLLECTION
+
+# Common English stopwords — kept small and conservative so domain terms
+# ("system", "process", "model") are never accidentally filtered.
+_STOPWORDS = frozenset("""
+a an and are as at be but by for from has have if in into is it its of on or
+that the their this to was were what when where which who will with
+""".split())
+
+_TOKEN_RE = re.compile(r"[a-z0-9]+")
+
+
+def tokenize(text: str) -> list[str]:
+    """Tokenize for BM25: lowercase, split on non-alphanumerics (so
+    punctuation never blocks a match and hyphenated terms split), and drop
+    stopwords. Must be applied identically at index and query time."""
+    return [t for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS]
 
 
 @lru_cache(maxsize=1)
@@ -41,7 +58,7 @@ def query_dense(collection, query_vector: list[float], top_k: int) -> list[dict]
 
 
 def build_bm25(chunks: list[dict], bm25_path: Path):
-    tokenized = [c["text"].lower().split() for c in chunks]
+    tokenized = [tokenize(c["text"]) for c in chunks]
     index = BM25Okapi(tokenized)
     with open(bm25_path, "wb") as f:
         pickle.dump((index, tokenized, chunks), f)
@@ -55,7 +72,7 @@ def load_bm25(bm25_path: Path):
 
 
 def query_bm25(index, corpus, chunks: list[dict], query: str, top_k: int) -> list[dict]:
-    tokens = query.lower().split()
+    tokens = tokenize(query)
     scores = index.get_scores(tokens)
     ranked = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[:top_k]
     return [

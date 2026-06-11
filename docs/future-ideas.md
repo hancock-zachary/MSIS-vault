@@ -8,12 +8,6 @@ expanding coverage.
 
 ## Priority 1 — Correctness and retrieval-quality fixes (high impact, low effort)
 
-### Better BM25 Tokenization
-`index.py` tokenizes with `text.lower().split()`, so `"systems,"` never matches
-`"systems"`. Strip punctuation and stopwords (optionally add light stemming) at both
-index and query time. Cheap sparse-retrieval win; requires rebuilding the BM25 pickle
-but not re-embedding.
-
 ### Stub Down-weighting in Retrieval
 Stub chunks (salvaged titles from garbled image pages) are indexed like normal chunks.
 Being short and keyword-dense, BM25 can rank them highly, wasting top-K slots on
@@ -171,6 +165,8 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Better BM25 Tokenization~~ ✅ (punctuation-splitting + conservative stopword list,
+  applied identically at index and query time; takes effect on BM25 rebuild)
 - ~~Contextual Chunk Enrichment~~ ✅ (course · document · slide-title header prepended
   at embedding time only; stored chunk text stays clean; takes effect on re-index)
 - ~~Page Ranges for Slide Chunks~~ ✅ (slide chunks store `page_start`/`page_end`,
