@@ -1,6 +1,27 @@
 import pytest
+from unittest.mock import patch
 from src.config import STUB_RRF_MULTIPLIER
-from src.retrieve import apply_stub_penalty, reciprocal_rank_fusion, deduplicate_by_id
+from src.retrieve import (
+    apply_stub_penalty, hybrid_retrieve, reciprocal_rank_fusion, deduplicate_by_id,
+)
+
+
+def test_hybrid_retrieve_passes_course_filter_to_dense():
+    with patch("src.retrieve.get_collection"), \
+         patch("src.retrieve.embed_text", return_value=[0.1] * 768), \
+         patch("src.retrieve.load_bm25", side_effect=FileNotFoundError), \
+         patch("src.retrieve.query_dense", return_value=[]) as mock_dense:
+        hybrid_retrieve(["what is an ERD?"], course="IS 6410")
+    assert mock_dense.call_args.kwargs["where"] == {"course": "IS 6410"}
+
+
+def test_hybrid_retrieve_no_filter_by_default():
+    with patch("src.retrieve.get_collection"), \
+         patch("src.retrieve.embed_text", return_value=[0.1] * 768), \
+         patch("src.retrieve.load_bm25", side_effect=FileNotFoundError), \
+         patch("src.retrieve.query_dense", return_value=[]) as mock_dense:
+        hybrid_retrieve(["what is an ERD?"])
+    assert mock_dense.call_args.kwargs["where"] is None
 
 
 def test_apply_stub_penalty_demotes_stubs():

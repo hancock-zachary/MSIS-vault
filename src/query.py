@@ -1,14 +1,34 @@
 """
-Usage: python src/query.py "Your question here"
+Usage: python src/query.py "Your question here" [--course "IS 6410"]
 
 Runs the full pipeline: rewrite → hybrid retrieve → rerank → format context.
 Output is a context block for Claude to consume. Does NOT call Claude itself.
+
+Retrieval is scoped to one course when --course is given, or when the
+question mentions exactly one known course (auto-detected). Questions
+mentioning several courses are never scoped — cross-course synthesis
+needs candidates from all of them.
 """
+import argparse
 import sys
 from src.rewrite import rewrite_query
 from src.retrieve import hybrid_retrieve
 from src.rerank import rerank_chunks
-from src.config import TOP_K_RERANK
+from src.config import RAW_DIR, TOP_K_RERANK
+
+
+def detect_course(question: str, known_courses: list[str]) -> str | None:
+    """Return the course iff exactly one known course is mentioned."""
+    q = question.lower()
+    mentioned = [c for c in known_courses if c.lower() in q]
+    return mentioned[0] if len(mentioned) == 1 else None
+
+
+def _known_courses() -> list[str]:
+    """Course names are the first-level subfolders of raw/."""
+    if not RAW_DIR.exists():
+        return []
+    return sorted(d.name for d in RAW_DIR.iterdir() if d.is_dir())
 
 
 def format_context(question: str, chunks: list[dict]) -> str:
@@ -30,13 +50,18 @@ def format_context(question: str, chunks: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def run_query(question: str) -> str:
+def run_query(question: str, course: str | None = None) -> str:
+    if course is None:
+        course = detect_course(question, _known_courses())
+        if course:
+            print(f"[src] Course filter auto-detected: {course}", file=sys.stderr)
+
     print(f"[src] Rewriting query...", file=sys.stderr)
     variants = rewrite_query(question)
     print(f"[src] {len(variants)} variants generated.", file=sys.stderr)
 
     print(f"[src] Running hybrid retrieval...", file=sys.stderr)
-    candidates = hybrid_retrieve(variants)
+    candidates = hybrid_retrieve(variants, course=course)
     print(f"[src] {len(candidates)} candidates before reranking.", file=sys.stderr)
 
     if not candidates:
@@ -50,8 +75,10 @@ def run_query(question: str) -> str:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python src/query.py \"Your question\"")
-        sys.exit(1)
-    question = " ".join(sys.argv[1:])
-    sys.stdout.buffer.write((run_query(question) + "\n").encode("utf-8"))
+    parser = argparse.ArgumentParser(description="Query the second brain.")
+    parser.add_argument("question", nargs="+", help="the question to ask")
+    parser.add_argument("--course", default=None,
+                        help='restrict retrieval to one course, e.g. "IS 6410"')
+    args = parser.parse_args()
+    question = " ".join(args.question)
+    sys.stdout.buffer.write((run_query(question, course=args.course) + "\n").encode("utf-8"))

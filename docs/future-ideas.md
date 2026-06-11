@@ -14,12 +14,6 @@ _All complete — see Done section._
 
 ## Priority 2 — Chunking, retrieval, and graph improvements (measured against the eval harness)
 
-### Course-Scoped Retrieval
-`query.py` has no way to restrict a question to one course even though the metadata
-exists. Detect course mentions in the question (or accept a `--course` flag) and pass
-a Chroma `where` filter plus a BM25-side filter. Prevents cross-course vocabulary
-collisions (e.g. "agile" appearing in three different courses).
-
 ### Neighbor Chunk Expansion (Small-to-Big)
 After reranking, fetch the adjacent chunks (same file, page ±1) for the winning chunks
 so Claude sees fuller context than the embedded snippet. Standard RAG upgrade that
@@ -150,6 +144,9 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Course-Scoped Retrieval~~ ✅ (`--course` flag on query.py plus auto-detection when
+  the question mentions exactly one known course; filters both Chroma and BM25;
+  multi-course questions stay unscoped for cross-course synthesis)
 - ~~Slide Chunk Boundary Improvements~~ ✅ (1-page overlap between slide groups via
   `SLIDE_PAGE_OVERLAP`; outlined decks split at section-title boundaries with the
   section title carried onto every window; validate against the eval baseline after

@@ -103,6 +103,32 @@ def test_query_dense_returns_ranked_chunks(mock_collection, sample_chunks):
     assert results[0]["score"] >= 0.0
 
 
+def test_query_dense_passes_course_filter(mock_collection):
+    query_dense(mock_collection, query_vector=[0.1] * 768, top_k=5,
+                where={"course": "IS 6410"})
+    assert mock_collection.query.call_args.kwargs["where"] == {"course": "IS 6410"}
+
+
+def _course_chunk(cid, course, text):
+    return {"id": cid, "course": course, "filename": f"{cid}.pdf", "page": 1,
+            "slide_title": "", "chunk_index": 0, "text": text}
+
+
+def test_query_bm25_filters_by_course(tmp_path):
+    chunks = [
+        _course_chunk("c1", "IS 6410", "Cardinality constrains entity relationships."),
+        _course_chunk("c2", "OSC 6660", "Cardinality also appears in operations material."),
+        _course_chunk("c3", "IS 6410", "Normalization reduces redundancy in databases."),
+        _course_chunk("c4", "OSC 6660", "Supply chain logistics and operations overview."),
+        _course_chunk("c5", "IS 6410", "Agile sprints organize development work."),
+    ]
+    index, corpus = build_bm25(chunks, tmp_path / "bm25.pkl")
+    results = query_bm25(index, corpus, chunks, "cardinality", top_k=5, course="IS 6410")
+    assert len(results) >= 1
+    assert all(r["course"] == "IS 6410" for r in results)
+    assert results[0]["id"] == "c1"
+
+
 def test_build_and_query_bm25(tmp_path, sample_chunks):
     # Add two unrelated chunks so BM25 IDF produces positive scores
     second_chunk = {

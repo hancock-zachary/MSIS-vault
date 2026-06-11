@@ -68,7 +68,8 @@ def deduplicate_by_id(chunks: list[dict]) -> list[dict]:
     return result
 
 
-def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL) -> list[dict]:
+def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL,
+                    course: str | None = None) -> list[dict]:
     """
     Perform hybrid retrieval: dense + sparse for each query variant, fused with RRF.
 
@@ -81,11 +82,13 @@ def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL) -> 
     Args:
         query_variants: List of query rewrite/reformulations.
         top_k: Top K results per retrieval method per variant.
+        course: When set, restrict both retrieval methods to this course.
 
     Returns:
         Deduplicated and RRF-fused chunk list.
     """
     collection = get_collection()
+    where = {"course": course} if course else None
 
     try:
         bm25_index, bm25_corpus, bm25_chunks = load_bm25(BM25_PATH)
@@ -96,10 +99,12 @@ def hybrid_retrieve(query_variants: list[str], top_k: int = TOP_K_RETRIEVAL) -> 
     all_ranked_lists = []
     for variant in query_variants:
         vec = embed_text(variant)
-        dense_results = query_dense(collection, vec, top_k)
+        dense_results = query_dense(collection, vec, top_k, where=where)
         all_ranked_lists.append(dense_results)
         if bm25_available:
-            sparse_results = query_bm25(bm25_index, bm25_corpus, bm25_chunks, variant, top_k)
+            sparse_results = query_bm25(
+                bm25_index, bm25_corpus, bm25_chunks, variant, top_k, course=course
+            )
             all_ranked_lists.append(sparse_results)
 
     fused = reciprocal_rank_fusion(all_ranked_lists)

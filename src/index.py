@@ -44,8 +44,9 @@ def upsert_chunks(collection, chunks: list[dict], embeddings: list[list[float]])
     )
 
 
-def query_dense(collection, query_vector: list[float], top_k: int) -> list[dict]:
-    results = collection.query(query_embeddings=[query_vector], n_results=top_k)
+def query_dense(collection, query_vector: list[float], top_k: int,
+                where: dict | None = None) -> list[dict]:
+    results = collection.query(query_embeddings=[query_vector], n_results=top_k, where=where)
     output = []
     for i, chunk_id in enumerate(results["ids"][0]):
         output.append({
@@ -91,12 +92,21 @@ def load_bm25(bm25_path: Path):
         return pickle.load(f)  # (index, tokenized_corpus, chunks)
 
 
-def query_bm25(index, corpus, chunks: list[dict], query: str, top_k: int) -> list[dict]:
+def query_bm25(index, corpus, chunks: list[dict], query: str, top_k: int,
+               course: str | None = None) -> list[dict]:
     tokens = tokenize(query)
     scores = index.get_scores(tokens)
-    ranked = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[:top_k]
-    return [
-        {"id": chunks[i]["id"], "text": chunks[i]["text"], "score": float(s),
-         **{k: v for k, v in chunks[i].items() if k not in ("id", "text")}}
-        for i, s in ranked if s > 0
-    ]
+    ranked = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
+    results = []
+    for i, s in ranked:
+        if s <= 0:
+            break  # sorted descending — nothing scoreworthy remains
+        if course and chunks[i].get("course") != course:
+            continue
+        results.append(
+            {"id": chunks[i]["id"], "text": chunks[i]["text"], "score": float(s),
+             **{k: v for k, v in chunks[i].items() if k not in ("id", "text")}}
+        )
+        if len(results) == top_k:
+            break
+    return results
