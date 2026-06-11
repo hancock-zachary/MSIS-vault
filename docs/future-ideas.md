@@ -14,12 +14,6 @@ _All complete — see Done section._
 
 ## Priority 2 — Chunking, retrieval, and graph improvements (measured against the eval harness)
 
-### Smarter Wiki Excerpts
-`graph.py` currently shows the first two chunks by page number, which is usually the
-title slide and agenda. Instead pick the chunks closest to the document's embedding
-centroid — the most representative content — so wiki pages and index previews actually
-describe the document.
-
 ### Diversity in Final Selection (MMR)
 The cross-encoder reranker can return 8 near-duplicate chunks from the same page.
 Maximal-marginal-relevance selection trades a little relevance for broader coverage
@@ -122,6 +116,10 @@ vaults per semester.
 - ~~Evaluation Script~~ ✅ (`src/eval.py` — retrieval metrics: doc/passage recall@k
   and MRR at retrieval + rerank stages, auto-generated question set, baseline
   comparison; answer-level metrics moved to a separate P2 item)
+- ~~Smarter Wiki Excerpts~~ ✅ (wiki pages and index previews now excerpt the chunks
+  closest to the document's embedding centroid instead of the first pages — title
+  slides and agendas no longer masquerade as content; stubs excluded; takes effect
+  on the next graph.py run)
 - ~~Document Trust / Source Weighting~~ ✅ (`source_type` inferred from subfolders
   under `raw/<Course>/` at ingest, surfaced in wiki frontmatter and query context
   headers, and applied as an additive rerank bonus via `SOURCE_TYPE_RERANK_BONUS` —

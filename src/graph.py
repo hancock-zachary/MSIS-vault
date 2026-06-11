@@ -21,6 +21,8 @@ from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
+import numpy as np
+
 from src.config import INGESTION_LOG, WIKI_DIR, RAW_DIR, GRAPH_TOP_K, GRAPH_MIN_SIMILARITY
 from src.index import get_collection
 
@@ -117,21 +119,46 @@ def _apply_mutual_filter(all_candidates: dict[str, dict[str, dict]]) -> dict[str
 # Phase 2: fetch excerpts from ChromaDB
 # ---------------------------------------------------------------------------
 
+def _most_central_indices(embeddings, n: int) -> list[int]:
+    """Indices of the n vectors closest (cosine) to the embedding centroid."""
+    vectors = np.asarray(embeddings, dtype=float)
+    if len(vectors) <= n:
+        return list(range(len(vectors)))
+    centroid = vectors.mean(axis=0)
+    norms = np.linalg.norm(vectors, axis=1) * np.linalg.norm(centroid)
+    norms[norms == 0] = 1.0
+    sims = vectors @ centroid / norms
+    return np.argsort(sims)[::-1][:n].tolist()
+
+
 def _get_excerpts(collection, filename: str, n: int = _EXCERPTS_PER_PAGE) -> list[str]:
-    """Pull the first n chunk texts for this document, sorted by page number."""
+    """Pull the n most representative chunk texts for this document.
+
+    Representative = closest to the document's embedding centroid. The old
+    first-pages approach usually surfaced the title slide and agenda, which
+    describe the document's packaging rather than its content. Stubs are
+    excluded; selected excerpts are shown in page (reading) order.
+    """
     result = collection.get(
         where={"filename": filename},
-        include=["documents", "metadatas"],
+        include=["documents", "metadatas", "embeddings"],
     )
     if not result["ids"]:
         return []
 
-    paired = sorted(
-        zip(result["metadatas"], result["documents"]),
-        key=lambda x: x[0].get("page", 0),
-    )
+    rows = [
+        (meta, text, emb)
+        for meta, text, emb in zip(result["metadatas"], result["documents"], result["embeddings"])
+        if not meta.get("is_stub")
+    ]
+    if not rows:
+        return []
+
+    central = _most_central_indices([row[2] for row in rows], n)
+    picked = sorted((rows[i] for i in central), key=lambda row: row[0].get("page", 0))
+
     excerpts = []
-    for _, text in paired[:n]:
+    for _, text, _ in picked:
         text = " ".join(text.split())  # collapse whitespace
         if len(text) > _EXCERPT_MAX_CHARS:
             text = text[:_EXCERPT_MAX_CHARS].rstrip() + "…"
