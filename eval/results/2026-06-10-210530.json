@@ -1,0 +1,468 @@
+{
+  "timestamp": "2026-06-10T21:05:30",
+  "question_count": 40,
+  "retrieval": {
+    "doc_recall@1": 0.675,
+    "doc_recall@5": 0.975,
+    "doc_recall@8": 0.975,
+    "doc_recall@20": 1.0,
+    "doc_mrr": 0.796,
+    "passage_recall@1": 0.5,
+    "passage_recall@5": 0.875,
+    "passage_recall@8": 0.925,
+    "passage_recall@20": 0.975,
+    "passage_mrr": 0.663
+  },
+  "rerank": {
+    "doc_recall@1": 0.825,
+    "doc_recall@5": 0.95,
+    "doc_recall@8": 1.0,
+    "doc_mrr": 0.879,
+    "passage_recall@1": 0.675,
+    "passage_recall@5": 0.925,
+    "passage_recall@8": 0.975,
+    "passage_mrr": 0.781
+  },
+  "per_question": [
+    {
+      "id": "q001",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 11
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 2
+      }
+    },
+    {
+      "id": "q002",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 8
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q003",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 2
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 3
+      }
+    },
+    {
+      "id": "q004",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q005",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q006",
+      "retrieval": {
+        "doc_rank": 4,
+        "passage_rank": 9
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q007",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 2
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q008",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q009",
+      "retrieval": {
+        "doc_rank": 2,
+        "passage_rank": 2
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q010",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q011",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 3
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 3
+      }
+    },
+    {
+      "id": "q012",
+      "retrieval": {
+        "doc_rank": 3,
+        "passage_rank": 3
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q013",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q014",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q015",
+      "retrieval": {
+        "doc_rank": 3,
+        "passage_rank": 3
+      },
+      "rerank": {
+        "doc_rank": 6,
+        "passage_rank": 6
+      }
+    },
+    {
+      "id": "q016",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q017",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 5
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 2
+      }
+    },
+    {
+      "id": "q018",
+      "retrieval": {
+        "doc_rank": 2,
+        "passage_rank": 2
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q019",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q020",
+      "retrieval": {
+        "doc_rank": 3,
+        "passage_rank": 3
+      },
+      "rerank": {
+        "doc_rank": 2,
+        "passage_rank": 5
+      }
+    },
+    {
+      "id": "q021",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q022",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q023",
+      "retrieval": {
+        "doc_rank": 3,
+        "passage_rank": 3
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q024",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q025",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q026",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 2,
+        "passage_rank": 2
+      }
+    },
+    {
+      "id": "q027",
+      "retrieval": {
+        "doc_rank": 2,
+        "passage_rank": 2
+      },
+      "rerank": {
+        "doc_rank": 5,
+        "passage_rank": 5
+      }
+    },
+    {
+      "id": "q028",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q029",
+      "retrieval": {
+        "doc_rank": 3,
+        "passage_rank": 3
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q030",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 2
+      }
+    },
+    {
+      "id": "q031",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q032",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q033",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q034",
+      "retrieval": {
+        "doc_rank": 11,
+        "passage_rank": null
+      },
+      "rerank": {
+        "doc_rank": 8,
+        "passage_rank": null
+      }
+    },
+    {
+      "id": "q035",
+      "retrieval": {
+        "doc_rank": 2,
+        "passage_rank": 2
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 2
+      }
+    },
+    {
+      "id": "q036",
+      "retrieval": {
+        "doc_rank": 2,
+        "passage_rank": 6
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q037",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 2
+      },
+      "rerank": {
+        "doc_rank": 3,
+        "passage_rank": 6
+      }
+    },
+    {
+      "id": "q038",
+      "retrieval": {
+        "doc_rank": 3,
+        "passage_rank": 3
+      },
+      "rerank": {
+        "doc_rank": 3,
+        "passage_rank": 3
+      }
+    },
+    {
+      "id": "q039",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    },
+    {
+      "id": "q040",
+      "retrieval": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      },
+      "rerank": {
+        "doc_rank": 1,
+        "passage_rank": 1
+      }
+    }
+  ]
+}
