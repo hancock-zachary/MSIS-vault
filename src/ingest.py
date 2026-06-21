@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 from src.config import (
-    RAW_DIR, INGESTION_LOG, BM25_PATH, SOURCE_TYPE_KEYWORDS, SUPPORTED_EXTENSIONS,
+    RAW_DIR, INGESTION_LOG, BM25_PATH, PURGE_ABORT_FRACTION,
+    SOURCE_TYPE_KEYWORDS, SUPPORTED_EXTENSIONS,
 )
 from src.chunk import build_chunks_from_file, enrich_for_embedding, is_quality_text
 from src.embed import embed_batch
@@ -19,23 +20,55 @@ def log_indexed(log: dict, pdf_path: Path, log_path: Path):
     log_path.write_text(json.dumps(log, indent=2))
 
 
-def purge_deleted_files(log: dict, log_path: Path):
-    """Remove files that no longer exist from the log and ChromaDB collection."""
+def purge_deleted_files(log: dict, log_path: Path, allow_purge: bool = False):
+    """Drop index entries for files that no longer exist on disk.
+
+    This only ever removes chunks from ChromaDB and entries from the log — it
+    never touches files under raw/. Source documents are never deleted here.
+
+    Safety guard: if more than PURGE_ABORT_FRACTION of indexed files are
+    missing at once, that usually means raw/ was moved or reorganized rather
+    than files being intentionally deleted. In that case we abort without
+    changing anything, so a botched reorg can't silently wipe the index.
+    Re-run with --purge to override.
+    """
     missing = [p for p in list(log) if not Path(p).exists()]
     if not missing:
         return
 
+    fraction = len(missing) / len(log)
+    if fraction > PURGE_ABORT_FRACTION and not allow_purge:
+        print(f"\n*** PURGE GUARD: {len(missing)} of {len(log)} indexed files "
+              f"({fraction:.0%}) are missing from disk. ***")
+        print("This usually means raw/ was moved or reorganized, not that these")
+        print("files should be dropped. Refusing to purge the index automatically.")
+        print("(This only affects the search index — your raw/ documents are not touched.)")
+        for p in missing[:30]:
+            print(f"  would drop index entries for: {p}")
+        if len(missing) > 30:
+            print(f"  ... and {len(missing) - 30} more")
+        print("\nIf this is intentional, re-run: uv run python src/ingest.py --purge")
+        raise SystemExit(1)
+
     collection = get_collection()
     for file_path_str in missing:
-        filename = Path(file_path_str).name
-        existing = collection.get(where={"filename": filename}, include=[])
+        path = Path(file_path_str)
+        filename = path.name
+        try:
+            # Scope deletion to course + filename so a same-named file in
+            # another course is never collaterally purged.
+            where = {"$and": [{"filename": filename}, {"course": _course_from_path(path)}]}
+        except ValueError:
+            where = {"filename": filename}
+        existing = collection.get(where=where, include=[])
         if existing["ids"]:
             collection.delete(ids=existing["ids"])
-            print(f"  Removed {len(existing['ids'])} chunks for deleted file: {filename}")
+            print(f"  Removed {len(existing['ids'])} index chunk(s) for file no longer on disk: {filename}")
         del log[file_path_str]
 
     log_path.write_text(json.dumps(log, indent=2))
-    print(f"Purged {len(missing)} deleted file(s) from index.")
+    print(f"Purged index entries for {len(missing)} file(s) missing from disk "
+          f"(raw/ documents were NOT touched).")
 
 
 def find_unindexed_files(root: Path, log: dict) -> list[Path]:
@@ -73,9 +106,9 @@ def _source_type_from_path(file_path: Path) -> str:
     return "unknown"
 
 
-def run_ingestion():
+def run_ingestion(allow_purge: bool = False):
     log = load_log(INGESTION_LOG)
-    purge_deleted_files(log, INGESTION_LOG)
+    purge_deleted_files(log, INGESTION_LOG, allow_purge=allow_purge)
     files = find_unindexed_files(RAW_DIR, log)
     if not files:
         print("Nothing to index.")
@@ -116,4 +149,12 @@ def run_ingestion():
 
 
 if __name__ == "__main__":
-    run_ingestion()
+    import argparse
+    parser = argparse.ArgumentParser(description="Index new/changed files under raw/.")
+    parser.add_argument(
+        "--purge", action="store_true",
+        help="allow purging index entries even when a large fraction of indexed "
+             "files are missing from disk (overrides the purge safety guard)",
+    )
+    args = parser.parse_args()
+    run_ingestion(allow_purge=args.purge)

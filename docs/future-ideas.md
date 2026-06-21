@@ -101,6 +101,14 @@ answering them — forces retrieval practice rather than passive review.
 
 ## Priority 6 — Infrastructure and engineering hygiene
 
+### Back Up raw/ Outside the Repo
+`raw/` is gitignored (copyrighted course material) so it has no version-control
+safety net, and source files are only ever staged copies. A manual reorg in File
+Explorer once removed ~115 indexed documents from `raw/` with no recovery path.
+The pipeline cannot prevent OS-level file loss — `raw/` needs a real backup
+(external drive, private encrypted cloud, or git-lfs in a private mirror). Consider
+a pre-ingest manifest so disappearances are at least detectable and enumerable.
+
 ### Multi-Vault / Multi-User Support
 Extend the system to support multiple students sharing a knowledge base, or separate
 vaults per semester.
@@ -138,6 +146,11 @@ vaults per semester.
 - ~~Single Source of Truth for BM25~~ ✅ (BM25 pickle is now a derived cache rebuilt
   from ChromaDB at the end of every ingest run — crashes and purges can no longer
   leave the two stores out of sync)
+- ~~Purge Safety Guard~~ ✅ (ingest aborts without changing anything if >20% of
+  indexed files are missing from disk — `PURGE_ABORT_FRACTION`, override with
+  `--purge`; purge now scopes deletes to course+filename to avoid cross-course
+  basename collisions; messages clarified that only the index is affected, never
+  raw/ documents)
 - ~~Stub Down-weighting in Retrieval~~ ✅ (RRF scores of stubs scaled by
   `STUB_RRF_MULTIPLIER`; reranker always orders stubs after content chunks)
 - ~~Better BM25 Tokenization~~ ✅ (punctuation-splitting + conservative stopword list,

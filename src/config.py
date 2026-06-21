@@ -53,6 +53,11 @@ OPENAI_EMBED_MODEL = "text-embedding-3-small"
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 
+# Safety guard: if more than this fraction of indexed files are missing from
+# disk, ingest refuses to auto-purge their index entries (likely a reorg or
+# accidental move, not an intentional deletion). Override with --purge.
+PURGE_ABORT_FRACTION = 0.2
+
 EVAL_DIR = VAULT_ROOT / "eval"
 EVAL_QUESTIONS_PATH = EVAL_DIR / "questions.json"
 EVAL_BASELINE_PATH = EVAL_DIR / "baseline.json"
